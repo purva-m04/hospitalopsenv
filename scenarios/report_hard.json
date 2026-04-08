@@ -1,0 +1,24 @@
+{
+  "scenario_id": "report_hard",
+  "task_type": "report_classification",
+  "difficulty": "hard",
+  "max_steps": 4,
+  "description": "A deceptive multi-section document that looks like a discharge summary on first read, but is actually a laboratory report. It contains discharge-like prose, imaging references, medication lists, and billing codes — all as deliberate distractors. The primary document type is lab. The title is buried and the lab accession number appears only once.",
+  "context": {
+    "report_id": "RPT-099",
+    "report_text": "FOLLOW-UP CLINICAL SUMMARY — POST-DISCHARGE LABORATORY REVIEW\nPatient: James K.         MRN: 00483921\nAdmission Date: 2024-02-18  Discharge Date: 2024-02-22\nOrdering Physician: Dr. S. Mehta, Endocrinology\nClinical Indication: Type 2 Diabetes Mellitus — glycaemic control review post-hospitalisation\n\nNOTE TO REVIEWER: This document is a laboratory results report (Accession #LAB-2024-03821)\ngenerated 72 hours post-discharge. It is NOT a discharge summary. The clinical background\nbelow is provided for result interpretation only.\n\nCLINICAL BACKGROUND (for context only — not primary document content):\nMr. K. is a 67-year-old male admitted for poorly controlled T2DM with HbA1c 11.2% on\nadmission. During hospitalisation, insulin regimen was titrated. Chest X-ray on admission\n(PA & Lateral, 2024-02-18) showed no acute cardiopulmonary pathology. Patient discharged\non Metformin 1000mg BID, Empagliflozin 10mg OD, Insulin Glargine 20 units nocte.\nDischarge condition: improved. Follow-up: outpatient endocrine clinic in 6 weeks.\nBilling: CPT 99239 (discharge day management), ICD-10 E11.65.\n\nLABORATORY REPORT — Accession #LAB-2024-03821\nCollection Date: 2024-02-25 (Day 3 post-discharge)\nSpecimen: Venous blood, fasting x8 hours\nProcessed by: Central Laboratory, Riverside Medical Centre\nReporting Scientist: C. Okafor, MLSc(ASCP)\n\nCOMPREHENSIVE METABOLIC PANEL:\n  Glucose (fasting):  142  mg/dL   [Ref: 70–99]      HIGH\n  HbA1c:             9.4  %        [Ref: <5.7]        HIGH (target <7.0 for T2DM)\n  BUN:                19  mg/dL    [Ref: 7–25]        Normal\n  Creatinine:        1.1  mg/dL    [Ref: 0.7–1.2]    Normal\n  eGFR:               72  mL/min   [Ref: >60]         Normal (G2 CKD staging)\n  Sodium:            138  mEq/L    [Ref: 136–145]     Normal\n  Potassium:         4.1  mEq/L    [Ref: 3.5–5.1]    Normal\n  Chloride:          101  mEq/L    [Ref: 98–107]      Normal\n  CO2 (Bicarbonate): 24   mEq/L    [Ref: 22–29]       Normal\n  Calcium:           9.2  mg/dL    [Ref: 8.5–10.5]   Normal\n  Total Protein:     7.1  g/dL     [Ref: 6.4–8.3]    Normal\n  Albumin:           4.0  g/dL     [Ref: 3.5–5.0]    Normal\n  ALT:                32  U/L      [Ref: 7–56]        Normal\n  AST:                28  U/L      [Ref: 10–40]       Normal\n  ALP:                74  U/L      [Ref: 44–147]      Normal\n  Total Bilirubin:   0.6  mg/dL    [Ref: 0.2–1.2]    Normal\n\nLIPID PANEL (fasting):\n  Total Cholesterol: 198  mg/dL    [Ref: <200]        Borderline\n  LDL Cholesterol:   122  mg/dL    [Ref: <100]        HIGH (target <70 for T2DM)\n  HDL Cholesterol:    41  mg/dL    [Ref: >40]         Low-normal\n  Triglycerides:     178  mg/dL    [Ref: <150]        ELEVATED\n  Non-HDL Chol:      157  mg/dL    [Ref: <130]        HIGH\n\nTHYROID FUNCTION:\n  TSH:               3.2  mIU/L    [Ref: 0.4–4.0]    Normal\n  Free T4:          1.12  ng/dL    [Ref: 0.8–1.8]    Normal\n\nURINALYSIS (dipstick + microscopy):\n  Glucose:           3+            Abnormal (consistent with hyperglycaemia)\n  Protein:           Trace         (monitor — possible early diabetic nephropathy)\n  Ketones:           Negative\n  Blood:             Negative\n  Nitrites:          Negative\n  Leukocyte esterase: Negative\n  Microscopy: No casts, no bacteria, occasional epithelial cells\n\nUrine Albumin-to-Creatinine Ratio (UACR): 38 mg/g  [Ref: <30]  MILDLY ELEVATED\n  → Consistent with microalbuminuria. Recommend repeat in 3 months.\n\nINTERPRETATION (Laboratory Pathologist — Dr. Y. Inoue, MD):\nPost-discharge glycaemic control remains suboptimal (HbA1c 9.4%, fasting glucose 142 mg/dL)\ndespite insulin optimisation during admission. LDL and triglycerides exceed targets for\ndiabetic risk profile. UACR microalbuminuria warrants renal monitoring. Recommend clinical\ncorrelation and potential intensification of anti-diabetic and lipid-lowering regimens.\nNo critical values. Results communicated to Dr. S. Mehta on 2024-02-25 at 14:33.\n\nElectronic signature: C. Okafor, MLSc(ASCP) | Reported: 2024-02-25 15:01\nReference intervals: Riverside Medical Centre Laboratory SOP v4.2 (2024)",
+    "available_labels": [
+      "lab",
+      "imaging",
+      "prescription",
+      "billing",
+      "discharge"
+    ]
+  },
+  "ground_truth": {
+    "correct_label": "lab"
+  },
+  "expected_action_sequence": [
+    "classify_report"
+  ]
+}

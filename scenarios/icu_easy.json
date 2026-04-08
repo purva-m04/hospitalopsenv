@@ -1,0 +1,49 @@
+{
+  "scenario_id": "icu_easy",
+  "task_type": "icu_bed_scheduling",
+  "difficulty": "easy",
+  "max_steps": 5,
+  "description": "One ICU bed is available and a single high-priority post-surgical patient requires admission. No conflicts. Agent should assess the patient, assign the bed, and confirm admission.",
+  "context": {
+    "ward_id": "ICU-A",
+    "total_beds": 8,
+    "available_beds": 1,
+    "occupied_beds": 7,
+    "pending_requests": [
+      {
+        "patient_id": "PAT-5501",
+        "patient_name": "James R.",
+        "age": 67,
+        "priority_score": 85,
+        "diagnosis": "Post-CABG cardiac surgery recovery",
+        "ventilator_required": false,
+        "isolation_required": false,
+        "hours_waiting": 1.5,
+        "referring_unit": "OR-3"
+      }
+    ],
+    "current_occupancy": [
+      {"bed_id": "A1", "patient_id": "PAT-5010", "ventilator": true,  "isolation": false, "days_in_icu": 3},
+      {"bed_id": "A2", "patient_id": "PAT-5021", "ventilator": false, "isolation": true,  "days_in_icu": 1},
+      {"bed_id": "A3", "patient_id": "PAT-5033", "ventilator": true,  "isolation": false, "days_in_icu": 5},
+      {"bed_id": "A4", "patient_id": "PAT-5044", "ventilator": false, "isolation": false, "days_in_icu": 2},
+      {"bed_id": "A5", "patient_id": "PAT-5055", "ventilator": false, "isolation": false, "days_in_icu": 7},
+      {"bed_id": "A6", "patient_id": "PAT-5066", "ventilator": true,  "isolation": false, "days_in_icu": 1},
+      {"bed_id": "A7", "patient_id": "PAT-5077", "ventilator": false, "isolation": false, "days_in_icu": 4}
+    ],
+    "available_bed_ids": ["A8"]
+  },
+  "ground_truth": {
+    "correct_patient_to_admit": "PAT-5501",
+    "correct_bed_id": "A8",
+    "should_discharge_patient": null,
+    "should_escalate": false,
+    "requires_ventilator_bed": false,
+    "requires_isolation_bed": false
+  },
+  "expected_action_sequence": [
+    "assess_patient",
+    "assign_bed",
+    "confirm_admission"
+  ]
+}

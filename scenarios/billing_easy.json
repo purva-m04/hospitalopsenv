@@ -1,0 +1,28 @@
+{
+  "scenario_id": "billing_easy",
+  "task_type": "billing_verification",
+  "difficulty": "easy",
+  "max_steps": 6,
+  "description": "Straightforward claim: valid CPT code 85025 (CBC with Differential) for a lab procedure, premium insurance plan covers the code, claimed amount matches expected fee schedule, no discrepancy. Agent should validate → verify → approve.",
+  "context": {
+    "claim_id": "CLM-101",
+    "billing_code": "85025",
+    "reported_procedure": "Complete Blood Count with Differential — outpatient haematology screening ordered by Dr. A. Nair on 2024-03-18. Specimen collected at in-network lab facility. Patient is an established insured under PLAN-BLUE.",
+    "insurance_plan_id": "PLAN-BLUE",
+    "claimed_amount": 85.00,
+    "report_category": "lab",
+    "clinical_notes": "Routine annual wellness panel. Patient: John D., 52M. No acute complaints. Physician ordered CBC as part of preventive care protocol. Specimen type: EDTA whole blood. Processing laboratory: City Central Clinical Laboratory (in-network)."
+  },
+  "ground_truth": {
+    "correct_code": "85025",
+    "code_is_valid": true,
+    "insurance_covers": true,
+    "has_discrepancy": false,
+    "correct_final_decision": "approve_claim"
+  },
+  "expected_action_sequence": [
+    "validate_billing_code",
+    "verify_insurance",
+    "approve_claim"
+  ]
+}

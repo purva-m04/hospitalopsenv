@@ -1,0 +1,16 @@
+{
+  "scenario_id": "report_medium",
+  "task_type": "report_classification",
+  "difficulty": "medium",
+  "max_steps": 3,
+  "description": "Classify an imaging report that also references a follow-up prescription and lab values. The dominant category is imaging; lab values and medication language are present as distractors.",
+  "context": {
+    "report_id": "RPT-042",
+    "report_text": "RADIOLOGY REPORT\nExamination: CT Scan Abdomen & Pelvis with IV Contrast\nAccession #: RAD-2024-04421\nOrdering Physician: Dr. P. Sharma, Emergency Medicine\nPatient: Susan K., DOB 1988-11-03, MRN 00319204\nStudy Date: 2024-03-22 14:35\nRadiologist: Dr. E. Mwangi, Board-Certified Radiologist\n\nCLINICAL INDICATION:\nAcute onset right lower quadrant abdominal pain for 18 hours. Nausea\npresent. WBC 11.8 x10^3/uL (mildly elevated on peripheral blood sample\nobtained in ED). Rule out appendicitis vs. ovarian pathology.\n\nTECHNIQUE:\nHelical CT scan of the abdomen and pelvis was performed following\nadministration of 100 mL intravenous iohexol contrast (Omnipaque 350).\nAxial slices at 3 mm collimation with coronal and sagittal reformats.\n\nFINDINGS:\nAppendix: Visualised in its entirety. Measures 5.8 mm in outer diameter\n(upper limit of normal). No periappendiceal fat stranding. No appendicolith\nidentified. No adjacent lymphadenopathy.\nBowel: Non-dilated loops of small and large bowel. No free air. No\nevidence of obstruction or intussusception.\nLiver/Biliary: Liver parenchyma is homogeneous without focal lesion.\nNo intra- or extrahepatic biliary ductal dilatation. Gallbladder is\nnormal in size; no gallstones, no pericholecystic fluid.\nSpleen: Normal size and attenuation (9.4 cm craniocaudal).\nPancreas: Unremarkable. No ductal dilatation.\nKidneys: Bilateral kidneys enhance symmetrically. No hydronephrosis,\nnephrolithiasis, or perinephric stranding.\nGynaecological structures: Uterus is anteverted, normal morphology.\nRight ovary: 2.1 cm simple follicular cyst — likely physiological.\nLeft ovary: Unremarkable. No free fluid in the pelvis.\n\nIMPRESSION:\n1. No evidence of acute appendicitis on CT. Appendix calibre borderline;\nclinical and laboratory correlation recommended.\n2. Simple right ovarian follicular cyst (2.1 cm), likely physiological.\n   Gynaecological follow-up advised if symptoms persist.\n3. No other acute intra-abdominal or pelvic pathology identified.\n\nRECOMMENDATIONS:\nIf right lower quadrant pain continues or worsens, surgical and\ngynaecological consultation is advised. Patient may take ibuprofen\n400 mg PO every 8 hours PRN for pain management pending further evaluation.\nRepeat pelvic ultrasound in 6-8 weeks to document resolution of the\nfollicular cyst is suggested.",
+    "available_labels": ["lab", "imaging", "prescription", "billing", "discharge"]
+  },
+  "ground_truth": {
+    "correct_label": "imaging"
+  },
+  "expected_action_sequence": ["classify_report"]
+}

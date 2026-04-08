@@ -1,0 +1,29 @@
+{
+  "scenario_id": "billing_hard",
+  "task_type": "billing_verification",
+  "difficulty": "hard",
+  "max_steps": 10,
+  "description": "Subtle multi-fault claim. The billing code 99214 is syntactically valid (Office Visit, Moderate Complexity) but the reported_procedure and report_category say this is an imaging study. Three compounding faults: (1) code is technically valid but categorically wrong for the reported service, (2) claimed amount $1,850 far exceeds the fee-schedule maximum for 99214 (~$150 office visit), (3) PLAN-BLUE covers 99214 for office visits but the service rendered was imaging — creating a category-coverage mismatch. Agent must validate (code is valid but wrong category), verify insurance, flag the discrepancy (category+amount mismatch), then reject.",
+  "context": {
+    "claim_id": "CLM-303",
+    "billing_code": "99214",
+    "reported_procedure": "MRI Brain with IV Contrast — performed at Northside Neuroimaging Center (in-network). Patient: Robert T., 61M, MRN 00614872. Study date: 2024-03-25. Ordered by Dr. L. Chen, Neurology, for new-onset focal seizure evaluation. Gadolinium contrast administered (no adverse reaction). Findings: No acute intracranial pathology. Report signed by Dr. E. Mwangi.",
+    "insurance_plan_id": "PLAN-BLUE",
+    "claimed_amount": 1850.00,
+    "report_category": "imaging",
+    "clinical_notes": "Claim submitted by billing department on 2024-03-28. Procedure performed: MRI Brain (CPT 70553 fee schedule: ~$620-$850). Submitted code 99214 is an office-visit code (fee schedule: ~$90-$150) — significant code-to-service mismatch. Claimed amount $1,850 exceeds fee-schedule ceiling for both 99214 (~$150) and 70553 (~$850). PLAN-BLUE covers 99214 for legitimate office visits but does NOT cover MRI brain (CPT 70553). This claim contains both a procedure category discrepancy and an amount discrepancy."
+  },
+  "ground_truth": {
+    "correct_code": "99214",
+    "code_is_valid": true,
+    "insurance_covers": true,
+    "has_discrepancy": true,
+    "correct_final_decision": "reject_claim"
+  },
+  "expected_action_sequence": [
+    "validate_billing_code",
+    "verify_insurance",
+    "flag_discrepancy",
+    "reject_claim"
+  ]
+}

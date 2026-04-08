@@ -1,0 +1,108 @@
+name: HospitalOpsEnv
+version: "2.0.0"
+description: >
+  A rule-based, deterministic simulation of hospital operational workflows.
+  Covers four tasks: medical report classification, billing & insurance
+  verification, blood bank management, and ICU bed scheduling.
+
+author: HospitalOpsEnv Team
+license: MIT
+
+entry_point: inference.py
+reset_endpoint: /reset
+step_endpoint: /step
+health_endpoint: /health
+
+environment:
+  type: rule-based
+  stochastic: false
+  multi_agent: false
+  observation_type: structured_json
+  action_type: structured_json
+  max_steps_per_episode: 10
+  external_apis_required: false
+  requires_gpu: false
+
+tasks:
+  - id: report_classification
+    name: "Medical Report Classification"
+    difficulty_levels: [easy, medium, hard]
+    scenario_ids:
+      - report_easy
+      - report_medium
+      - report_hard
+
+  - id: billing_verification
+    name: "Billing & Insurance Verification"
+    difficulty_levels: [easy, medium, hard]
+    scenario_ids:
+      - billing_easy
+      - billing_medium
+      - billing_hard
+    notes: >
+      Hard scenario uses a cross-reference challenge: the billing code is
+      syntactically valid but mismatches the reported service category and
+      the claimed amount exceeds the fee-schedule ceiling for that code.
+
+  - id: blood_bank
+    name: "Blood Bank Management"
+    difficulty_levels: [easy, medium, hard]
+    scenario_ids:
+      - bloodbank_easy
+      - bloodbank_medium
+      - bloodbank_hard
+    notes: >
+      Step rewards include a time-decay bonus (max +0.10 at step 0, linear
+      decay to 0 by step 6) to encourage efficient decision-making.
+
+  - id: icu_bed_scheduling
+    name: "ICU Bed Scheduling"
+    difficulty_levels: [easy, medium, hard]
+    scenario_ids:
+      - icu_easy
+      - icu_medium
+      - icu_hard
+    notes: >
+      Multi-step task. Agent must assess pending patients by priority, optionally
+      discharge a step-down-ready occupant to free a bed, escalate infrastructure
+      issues (ventilator, isolation) when required, assign the correct bed, and
+      confirm admission. Episode ends on confirm_admission.
+
+scenarios:
+  - report_easy
+  - report_medium
+  - report_hard
+  - billing_easy
+  - billing_medium
+  - billing_hard
+  - bloodbank_easy
+  - bloodbank_medium
+  - bloodbank_hard
+  - icu_easy
+  - icu_medium
+  - icu_hard
+
+grading:
+  type: deterministic
+  score_range: [0.0, 1.0]
+  partial_credit: true
+  grader_module: app.graders.GraderEngine
+  grader_method: grade
+  called_when: episode_done
+
+inference:
+  entrypoint: inference.py
+  env_vars:
+    api_key: OPENAI_API_KEY
+    base_url: API_BASE_URL
+    model: MODEL_NAME
+    use_heuristic: USE_HEURISTIC
+  supports_heuristic_fallback: true
+  output_file: results.json
+
+deployment:
+  platform: huggingface_spaces
+  space_sdk: docker
+  dockerfile: Dockerfile
+  port: 7860
+  startup_timeout_seconds: 60

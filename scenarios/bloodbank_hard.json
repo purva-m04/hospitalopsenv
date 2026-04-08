@@ -1,0 +1,38 @@
+{
+  "scenario_id": "bloodbank_hard",
+  "task_type": "blood_bank",
+  "difficulty": "hard",
+  "max_steps": 8,
+  "description": "Emergency O- request for 2 units, but only 1 unit of O- is in inventory. Additionally 3 units of A+ are flagged as expiring within 7 days and must be discarded. Since O- patients can ONLY receive O- blood and the full quantity cannot be fulfilled, the agent must: (1) discard the expiring A+ units, (2) allocate the 1 available O- unit (partial fulfilment — allocation_fulfilled remains False so the episode does NOT auto-close), (3) request restock for the shortage. Note: use_compatible_type is NOT applicable — O- recipients can only receive O-.",
+  "context": {
+    "request_id": "BLD-099",
+    "requested_type": "O-",
+    "requested_units": 2,
+    "urgency": "emergency",
+    "inventory": {
+      "A+":  10,
+      "A-":  3,
+      "B+":  7,
+      "B-":  2,
+      "O+":  12,
+      "O-":  1,
+      "AB+": 5,
+      "AB-": 0
+    },
+    "expiry_status": {
+      "A+": 3
+    },
+    "clinical_context": "Trauma bay activation: MVA victim, male unknown age (~30s), massive haemorrhage protocol initiated. Patient blood type UNKNOWN — universal donor O- required for immediate transfusion prior to typing. Trauma surgery requests 2 units O- PRBC stat. Blood bank has only 1 unit O- on hand. Additionally, blood bank audit confirms 3 A+ units (bag IDs A+2024-031 through A+2024-033) expire 2024-03-26 — within 7-day window — and must be discarded per regulatory SOP before the next inventory cycle. Crossmatch not possible given urgency; proceed under MHP (Massive Haemorrhage Protocol). Issue available O- immediately; document shortage and escalate restock to regional blood centre."
+  },
+  "ground_truth": {
+    "correct_allocation_type": "O-",
+    "can_fully_fulfill": false,
+    "should_discard_types": ["A+"],
+    "should_request_restock": true
+  },
+  "expected_action_sequence": [
+    "discard_expired",
+    "allocate_blood",
+    "request_restock"
+  ]
+}

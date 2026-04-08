@@ -1,0 +1,38 @@
+{
+  "scenario_id": "bloodbank_medium",
+  "task_type": "blood_bank",
+  "difficulty": "medium",
+  "max_steps": 8,
+  "description": "Urgent B+ request. Current stock is sufficient to fulfil the 3-unit request BUT 4 units of B+ are expiring within 7 days and must be discarded first for inventory hygiene. After allocation, remaining B+ will drop to 0 units — below safe buffer — so a restock request is required. Agent must: discard expired B+ → allocate B+ → request restock.",
+  "context": {
+    "request_id": "BLD-044",
+    "requested_type": "B+",
+    "requested_units": 3,
+    "urgency": "urgent",
+    "inventory": {
+      "A+":  10,
+      "A-":  3,
+      "B+":  7,
+      "B-":  1,
+      "O+":  12,
+      "O-":  5,
+      "AB+": 4,
+      "AB-": 0
+    },
+    "expiry_status": {
+      "B+": 4
+    },
+    "clinical_context": "GI surgery patient, male 54, post-Whipple procedure on Day 2. Haemoglobin dropped from 10.2 to 7.4 g/dL over 6 hours. Surgeon requests 3 units B+ packed red blood cells urgently. Patient ABO typed and screened: B Rh-positive, no irregular antibodies. Anaesthesia on standby. Time-critical — target transfusion start within 30 minutes. Note: 4 of the 7 B+ units in inventory are labelled with expiry date 2024-03-25 (today + 3 days) and must be quarantined per blood bank SOP before any allocation is issued."
+  },
+  "ground_truth": {
+    "correct_allocation_type": "B+",
+    "can_fully_fulfill": true,
+    "should_discard_types": ["B+"],
+    "should_request_restock": true
+  },
+  "expected_action_sequence": [
+    "discard_expired",
+    "allocate_blood",
+    "request_restock"
+  ]
+}

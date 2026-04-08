@@ -1,0 +1,16 @@
+{
+  "scenario_id": "report_easy",
+  "task_type": "report_classification",
+  "difficulty": "easy",
+  "max_steps": 3,
+  "description": "Classify a clear, single-category lab results report. The text contains unambiguous lab terminology with a full haematology panel, metabolic markers, and interpretive commentary.",
+  "context": {
+    "report_id": "RPT-001",
+    "report_text": "LABORATORY REPORT — HAEMATOLOGY & CHEMISTRY PANEL\nAccession #: LAB-2024-00831\nOrdering Physician: Dr. A. Nair, Internal Medicine\nPatient: John D., DOB 1972-04-15, MRN 00482917\nCollection Date: 2024-03-18 07:42\nReceived: 2024-03-18 08:05\nReported: 2024-03-18 10:17\n\nCOMPLETE BLOOD COUNT (CBC) WITH DIFFERENTIAL\n  WBC:          7.2  x10^3/uL   [Ref: 4.5-11.0]   NORMAL\n  RBC:          4.8  x10^6/uL   [Ref: 4.5-5.9]    NORMAL\n  Hemoglobin:  14.5  g/dL       [Ref: 13.5-17.5]  NORMAL\n  Hematocrit:  43.2  %          [Ref: 41-53]       NORMAL\n  MCV:         89.2  fL         [Ref: 80-100]      NORMAL\n  Platelets:  220    x10^3/uL   [Ref: 150-400]     NORMAL\n  Neutrophils: 58    %          [Ref: 50-70]       NORMAL\n  Lymphocytes: 32    %          [Ref: 20-40]       NORMAL\n  Monocytes:    7    %          [Ref: 2-8]         NORMAL\n  Eosinophils:  2    %          [Ref: 1-4]         NORMAL\n\nCOMPREHENSIVE METABOLIC PANEL (CMP)\n  Sodium:      138  mEq/L       [Ref: 136-145]     NORMAL\n  Potassium:   4.1  mEq/L       [Ref: 3.5-5.1]     NORMAL\n  BUN:          14  mg/dL       [Ref: 7-20]        NORMAL\n  Creatinine:  0.9  mg/dL       [Ref: 0.6-1.2]     NORMAL\n  eGFR:        >90  mL/min/1.73m2                  NORMAL\n  Glucose:      92  mg/dL       [Ref: 70-99]       NORMAL\n  ALT:          22  U/L         [Ref: 7-56]        NORMAL\n  AST:          19  U/L         [Ref: 10-40]       NORMAL\n\nTHYROID PANEL\n  TSH:          2.1  mIU/L      [Ref: 0.4-4.0]     NORMAL\n  Free T4:      1.2  ng/dL      [Ref: 0.8-1.8]     NORMAL\n\nLIPID PANEL (FASTING)\n  Total Cholesterol: 184 mg/dL  [Ref: <200]        NORMAL\n  LDL Cholesterol:   112 mg/dL  [Ref: <130]        NORMAL\n  HDL Cholesterol:    52 mg/dL  [Ref: >40]         NORMAL\n  Triglycerides:      98 mg/dL  [Ref: <150]        NORMAL\n\nINTERPRETATION:\nAll haematological indices, renal function, hepatic enzymes, thyroid panel,\nand fasting lipid values fall within reference intervals. No abnormal\nspecimen values detected. Repeat comprehensive panel recommended in 12 months.\nVerified by: Clinical Laboratory Scientist T. Okonkwo, MLS(ASCP)",
+    "available_labels": ["lab", "imaging", "prescription", "billing", "discharge"]
+  },
+  "ground_truth": {
+    "correct_label": "lab"
+  },
+  "expected_action_sequence": ["classify_report"]
+}

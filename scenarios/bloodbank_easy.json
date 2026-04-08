@@ -1,0 +1,32 @@
+{
+  "scenario_id": "bloodbank_easy",
+  "task_type": "blood_bank",
+  "difficulty": "easy",
+  "max_steps": 5,
+  "description": "Routine request for 2 units of A+ blood. Ample stock available across all types. No expiry concerns. Inventory will remain above safe thresholds after allocation. Single allocate_blood action is sufficient.",
+  "context": {
+    "request_id": "BLD-001",
+    "requested_type": "A+",
+    "requested_units": 2,
+    "urgency": "routine",
+    "inventory": {
+      "A+":  12,
+      "A-":  4,
+      "B+":  8,
+      "B-":  2,
+      "O+":  15,
+      "O-":  6,
+      "AB+": 3,
+      "AB-": 1
+    },
+    "expiry_status": {},
+    "clinical_context": "Pre-operative crossmatch for elective hip arthroplasty, patient Maria G., 68F. Surgery scheduled 2024-03-20 08:00. Blood bank technician has confirmed ABO/Rh typing: A Rh-positive. Two units crossmatched and held. No alloantibodies detected on antibody screen. Transfusion threshold: Hb <8 g/dL intra-operatively."
+  },
+  "ground_truth": {
+    "correct_allocation_type": "A+",
+    "can_fully_fulfill": true,
+    "should_discard_types": [],
+    "should_request_restock": false
+  },
+  "expected_action_sequence": ["allocate_blood"]
+}

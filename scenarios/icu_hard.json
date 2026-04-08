@@ -1,0 +1,73 @@
+{
+  "scenario_id": "icu_hard",
+  "task_type": "icu_bed_scheduling",
+  "difficulty": "hard",
+  "max_steps": 10,
+  "description": "Full ICU with three pending patients of varying priority. The highest-priority patient (priority 97) requires BOTH ventilator support AND contact isolation. Only one current patient is ready for step-down (PAT-7044), and their bed (C4) has a ventilator — satisfying the incoming patient's ventilator requirement. However, C4 is a standard (non-isolation) bay; the agent must also flag that isolation infrastructure must be arranged (escalate_issue) before confirming admission. Assigning a non-ventilated bed would be unsafe.",
+  "context": {
+    "ward_id": "ICU-C",
+    "total_beds": 6,
+    "available_beds": 0,
+    "occupied_beds": 6,
+    "pending_requests": [
+      {
+        "patient_id": "PAT-7701",
+        "patient_name": "Elena V.",
+        "age": 58,
+        "priority_score": 97,
+        "diagnosis": "ARDS secondary to severe CAP — intubated in ED, requires mechanical ventilation and contact precautions (MRSA positive on nasal swab)",
+        "ventilator_required": true,
+        "isolation_required": true,
+        "hours_waiting": 0.25,
+        "referring_unit": "ED-Resus"
+      },
+      {
+        "patient_id": "PAT-7702",
+        "patient_name": "Omar S.",
+        "age": 45,
+        "priority_score": 63,
+        "diagnosis": "DKA with AKI — on insulin drip, creatinine trending down, not ventilated",
+        "ventilator_required": false,
+        "isolation_required": false,
+        "hours_waiting": 2.0,
+        "referring_unit": "ED-Medical"
+      },
+      {
+        "patient_id": "PAT-7703",
+        "patient_name": "Grace N.",
+        "age": 81,
+        "priority_score": 38,
+        "diagnosis": "Elective pacemaker insertion monitoring — haemodynamically stable",
+        "ventilator_required": false,
+        "isolation_required": false,
+        "hours_waiting": 5.0,
+        "referring_unit": "Cardiology-Ward"
+      }
+    ],
+    "current_occupancy": [
+      {"bed_id": "C1", "patient_id": "PAT-7010", "ventilator": false, "isolation": true,  "days_in_icu": 1,  "ready_for_stepdown": false},
+      {"bed_id": "C2", "patient_id": "PAT-7021", "ventilator": true,  "isolation": false, "days_in_icu": 2,  "ready_for_stepdown": false},
+      {"bed_id": "C3", "patient_id": "PAT-7033", "ventilator": false, "isolation": false, "days_in_icu": 3,  "ready_for_stepdown": false},
+      {"bed_id": "C4", "patient_id": "PAT-7044", "ventilator": true,  "isolation": false, "days_in_icu": 9,  "ready_for_stepdown": true},
+      {"bed_id": "C5", "patient_id": "PAT-7055", "ventilator": false, "isolation": false, "days_in_icu": 5,  "ready_for_stepdown": false},
+      {"bed_id": "C6", "patient_id": "PAT-7066", "ventilator": true,  "isolation": false, "days_in_icu": 4,  "ready_for_stepdown": false}
+    ],
+    "available_bed_ids": []
+  },
+  "ground_truth": {
+    "correct_patient_to_admit": "PAT-7701",
+    "correct_bed_id": "C4",
+    "should_discharge_patient": "PAT-7044",
+    "should_escalate": true,
+    "escalation_reason": "Isolation infrastructure required for MRSA-positive patient before admission to standard bay C4",
+    "requires_ventilator_bed": true,
+    "requires_isolation_bed": true
+  },
+  "expected_action_sequence": [
+    "assess_patient",
+    "discharge_patient",
+    "escalate_issue",
+    "assign_bed",
+    "confirm_admission"
+  ]
+}

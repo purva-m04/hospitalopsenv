@@ -1,0 +1,28 @@
+{
+  "scenario_id": "billing_medium",
+  "task_type": "billing_verification",
+  "difficulty": "medium",
+  "max_steps": 8,
+  "description": "Valid CPT code 71046 (Chest X-Ray PA and Lateral) for a real imaging procedure, but the patient's insurance plan (PLAN-BASIC) only covers a narrow set of lab and low-complexity office visit codes — imaging is explicitly excluded. Agent must validate code (valid), verify insurance (not covered), then reject the claim.",
+  "context": {
+    "claim_id": "CLM-202",
+    "billing_code": "71046",
+    "reported_procedure": "Chest X-Ray PA and Lateral — performed at Metro General Radiology (in-network). Patient: Susan K., 35F. Study date 2024-03-22. Ordered by Dr. P. Sharma, Emergency Medicine, to evaluate right lower quadrant pain with associated cough and mild dyspnoea. Two-view chest radiograph performed; findings documented in separate radiology report (Accession RAD-2024-04421).",
+    "insurance_plan_id": "PLAN-BASIC",
+    "claimed_amount": 450.00,
+    "report_category": "imaging",
+    "clinical_notes": "PLAN-BASIC is a restricted preventive-care plan covering routine laboratory panels and low-complexity office visits only. Diagnostic imaging, specialist consultations, and in-patient procedures require separate prior-authorisation under an upgraded plan tier."
+  },
+  "ground_truth": {
+    "correct_code": "71046",
+    "code_is_valid": true,
+    "insurance_covers": false,
+    "has_discrepancy": false,
+    "correct_final_decision": "reject_claim"
+  },
+  "expected_action_sequence": [
+    "validate_billing_code",
+    "verify_insurance",
+    "reject_claim"
+  ]
+}

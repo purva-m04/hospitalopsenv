@@ -1,0 +1,60 @@
+{
+  "scenario_id": "icu_medium",
+  "task_type": "icu_bed_scheduling",
+  "difficulty": "medium",
+  "max_steps": 8,
+  "description": "ICU is at full capacity. Two patients are pending: one critical post-trauma (priority 92) and one elective monitoring (priority 41). To admit the critical patient the agent must first discharge the longest-staying stable ICU patient (PAT-6055, 8 days, stable for step-down), then assign the freed bed to the highest-priority patient.",
+  "context": {
+    "ward_id": "ICU-B",
+    "total_beds": 6,
+    "available_beds": 0,
+    "occupied_beds": 6,
+    "pending_requests": [
+      {
+        "patient_id": "PAT-6601",
+        "patient_name": "Anika M.",
+        "age": 29,
+        "priority_score": 92,
+        "diagnosis": "Polytrauma — MVA, splenic laceration Grade III, rib fractures",
+        "ventilator_required": false,
+        "isolation_required": false,
+        "hours_waiting": 0.5,
+        "referring_unit": "ER-Trauma"
+      },
+      {
+        "patient_id": "PAT-6602",
+        "patient_name": "Bernard L.",
+        "age": 74,
+        "priority_score": 41,
+        "diagnosis": "Elective post-TURP monitoring, stable vitals",
+        "ventilator_required": false,
+        "isolation_required": false,
+        "hours_waiting": 3.0,
+        "referring_unit": "Urology-Ward"
+      }
+    ],
+    "current_occupancy": [
+      {"bed_id": "B1", "patient_id": "PAT-6010", "ventilator": true,  "isolation": false, "days_in_icu": 2,  "ready_for_stepdown": false},
+      {"bed_id": "B2", "patient_id": "PAT-6021", "ventilator": false, "isolation": false, "days_in_icu": 1,  "ready_for_stepdown": false},
+      {"bed_id": "B3", "patient_id": "PAT-6033", "ventilator": false, "isolation": true,  "days_in_icu": 3,  "ready_for_stepdown": false},
+      {"bed_id": "B4", "patient_id": "PAT-6044", "ventilator": true,  "isolation": false, "days_in_icu": 4,  "ready_for_stepdown": false},
+      {"bed_id": "B5", "patient_id": "PAT-6055", "ventilator": false, "isolation": false, "days_in_icu": 8,  "ready_for_stepdown": true},
+      {"bed_id": "B6", "patient_id": "PAT-6066", "ventilator": false, "isolation": false, "days_in_icu": 6,  "ready_for_stepdown": false}
+    ],
+    "available_bed_ids": []
+  },
+  "ground_truth": {
+    "correct_patient_to_admit": "PAT-6601",
+    "correct_bed_id": "B5",
+    "should_discharge_patient": "PAT-6055",
+    "should_escalate": false,
+    "requires_ventilator_bed": false,
+    "requires_isolation_bed": false
+  },
+  "expected_action_sequence": [
+    "assess_patient",
+    "discharge_patient",
+    "assign_bed",
+    "confirm_admission"
+  ]
+}
