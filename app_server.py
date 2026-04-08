@@ -21,6 +21,7 @@ import sys
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi import Body
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -72,7 +73,7 @@ def list_scenarios():
 
 
 @app.post("/reset")
-def reset(req: ResetRequest = None):
+def reset(req: Optional[ResetRequest] = Body(default=None)):
     """
     Start a new episode with the given scenario_id.
     Returns the initial observation.
