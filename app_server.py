@@ -72,11 +72,13 @@ def list_scenarios():
 
 
 @app.post("/reset")
-def reset(req: ResetRequest):
+def reset(req: ResetRequest = None):
     """
     Start a new episode with the given scenario_id.
     Returns the initial observation.
     """
+    if req is None:
+        req = ResetRequest()
     try:
         obs = _env.reset(req.scenario_id)
         return obs.model_dump(mode="json")
