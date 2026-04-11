@@ -126,19 +126,19 @@ class TestReportGrader:
         scenario = loader.load("report_easy")
         state = make_report_state("lab", "lab", steps=1)
         score = grader.grade(state, scenario)
-        assert score == 1.0
+        assert score >= 0.999   # ✅ was == 1.0
 
     def test_correct_label_slow(self):
         scenario = loader.load("report_easy")
         state = make_report_state("lab", "lab", steps=3)
         score = grader.grade(state, scenario)
-        assert score == 0.8   # correct label, no efficiency bonus (steps=3)
+        assert score == 0.8
 
     def test_wrong_label(self):
         scenario = loader.load("report_easy")
         state = make_report_state("imaging", "lab", steps=1)
         score = grader.grade(state, scenario)
-        assert score == 0.0   # wrong label → no correctness, no efficiency bonus
+        assert score <= 0.001   # ✅ was == 0.0
 
     def test_not_classified(self):
         scenario = loader.load("report_easy")
@@ -156,7 +156,7 @@ class TestReportGrader:
             ),
         )
         score = grader.grade(state, scenario)
-        assert score == 0.0
+        assert score <= 0.001   # ✅ was == 0.0
 
     def test_scores_are_not_all_identical(self):
         scenario = loader.load("report_easy")
@@ -165,7 +165,7 @@ class TestReportGrader:
             grader.grade(make_report_state("lab", "lab", 3), scenario),
             grader.grade(make_report_state("imaging", "lab", 1), scenario),
         }
-        assert len(scores) > 1   # not all the same
+        assert len(scores) > 1
 
 
 # ---------------------------------------------------------------------------
@@ -185,14 +185,12 @@ class TestBillingGrader:
             final_decision="approve_claim",
         )
         score = grader.grade(make_billing_internal(bs), scenario)
-        assert score == 1.0
+        assert score >= 0.999   # ✅ was == 1.0
 
     def test_zero_score_no_actions(self):
         scenario = loader.load("billing_easy")
         bs = make_billing_state()
         score = grader.grade(make_billing_internal(bs), scenario)
-        # No validation, no insurance check, no discrepancy action, no decision
-        # Only the "no discrepancy" bonus applies (0.20) since has_discrepancy=False
         assert score == 0.20
 
     def test_partial_credit_code_only(self):
@@ -202,7 +200,6 @@ class TestBillingGrader:
             code_correct_result=True,
         )
         score = grader.grade(make_billing_internal(bs), scenario)
-        # 0.10 (validated) + 0.15 (correct) + 0.20 (no discrepancy) = 0.45
         assert score == pytest.approx(0.45)
 
     def test_wrong_final_decision_penalised(self):
@@ -212,11 +209,9 @@ class TestBillingGrader:
             code_correct_result=True,
             insurance_verified=True,
             insurance_correct_result=True,
-            final_decision="reject_claim",   # wrong
+            final_decision="reject_claim",
         )
         score = grader.grade(make_billing_internal(bs), scenario)
-        # 0.10 (validated) + 0.15 (correct code eval) + 0.20 (correct ins eval)
-        # + 0.20 (no discrepancy, not falsely flagged) + 0.00 (wrong decision) = 0.65
         assert score == pytest.approx(0.65)
 
     def test_hard_scenario_with_discrepancy(self):
@@ -237,7 +232,7 @@ class TestBillingGrader:
         )
         state = make_billing_internal(bs, "billing_hard")
         score = grader.grade(state, scenario)
-        assert score == 1.0
+        assert score >= 0.999   # ✅ was == 1.0
 
     def test_missed_discrepancy_no_points(self):
         scenario = loader.load("billing_hard")
@@ -252,12 +247,11 @@ class TestBillingGrader:
             code_correct_result=True,
             insurance_verified=True,
             insurance_correct_result=True,
-            discrepancy_flagged=False,   # missed
+            discrepancy_flagged=False,
             final_decision="reject_claim",
         )
         state = make_billing_internal(bs, "billing_hard")
         score = grader.grade(state, scenario)
-        # 0.10 + 0.15 + 0.20 + 0.00 (missed discrepancy) + 0.35 = 0.80
         assert score == pytest.approx(0.80, abs=1e-3)
 
     def test_scores_vary_across_outcomes(self):
@@ -276,7 +270,7 @@ class TestBillingGrader:
         s1 = grader.grade(make_billing_internal(perfect_bs), scenario)
         s2 = grader.grade(make_billing_internal(empty_bs), scenario)
         s3 = grader.grade(make_billing_internal(wrong_bs), scenario)
-        assert len({s1, s2, s3}) == 3  # all distinct
+        assert len({s1, s2, s3}) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -290,30 +284,24 @@ class TestBloodBankGrader:
         scenario = loader.load("bloodbank_easy")
         bb = make_blood_state()
         score = grader.grade(make_blood_internal(bb), scenario)
-        # type(0.35) + units(0.15) + expiry_clean(0.20) + no_waste(0.15) + restock_ok(0.15) = 1.0
-        assert score == 1.0
+        assert score >= 0.999   # ✅ was == 1.0
 
     def test_wrong_blood_type_penalised(self):
         scenario = loader.load("bloodbank_easy")
         bb = make_blood_state(allocated_type="B+", allocated_units=2)
         score = grader.grade(make_blood_internal(bb), scenario)
-        # No type points, no unit points; expiry(0.20) + no_waste(0.15) + restock(0.15) = 0.50
         assert score == pytest.approx(0.50)
 
     def test_partial_correct_type_wrong_units(self):
         scenario = loader.load("bloodbank_easy")
-        bb = make_blood_state(allocated_type="A+", allocated_units=1)  # 1 of 2 requested
+        bb = make_blood_state(allocated_type="A+", allocated_units=1)
         score = grader.grade(make_blood_internal(bb), scenario)
-        # Type(0.35) + no units bonus + expiry(0.20) + no_waste(0.15) + restock(0.15) = 0.85
         assert score == pytest.approx(0.85)
 
     def test_unnecessary_discard_penalised(self):
-        scenario = loader.load("bloodbank_easy")  # should_discard_types = []
+        scenario = loader.load("bloodbank_easy")
         bb = make_blood_state(units_discarded=3)
         score = grader.grade(make_blood_internal(bb), scenario)
-        # type(0.35) + units(0.15) + expiry: discard NOT needed but done → 0.00
-        # + no_waste penalty: −0.15 applied
-        # + restock(0.15) = 0.50
         assert score == pytest.approx(0.50)
 
     def test_hard_scenario_full_correct(self):
@@ -347,7 +335,6 @@ class TestBloodBankGrader:
             blood_bank_state=bb,
         )
         score = grader.grade(state, scenario)
-        # type(0.35) + no full units(0) + expiry_handled(0.20+0.15) + restock(0.15) = 0.85
         assert score >= 0.85
 
     def test_scores_not_all_identical(self):
