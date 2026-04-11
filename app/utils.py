@@ -169,6 +169,5 @@ def heuristic_classify(report_text: str) -> str:
     return best if scores[best] > 0 else "billing"
 
 
-def clamp(value: float, lo: float = 0.0, hi: float = 1.0) -> float:
-    """Clamp a float to [lo, hi]."""
+def clamp(value: float, lo: float = 0.001, hi: float = 0.999) -> float:
     return max(lo, min(hi, value))
