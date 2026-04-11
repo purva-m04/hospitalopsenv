@@ -38,7 +38,7 @@ class GraderEngine:
             return self._grade_blood_bank(state, gt)
         if state.task_type == TaskType.ICU_BED_SCHEDULING:
             return self._grade_icu(state, gt)
-        return 0.0
+        return 0.001
 
     # ------------------------------------------------------------------
     # Task 1 – Report Classification
