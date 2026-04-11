@@ -132,7 +132,7 @@ def get_state():
 
 
 @app.post("/run_inference")
-def run_inference(use_heuristic: bool = True):
+def run_inference(use_heuristic: bool = False):
     """
     Run the inference script across all scenarios.
     Returns stdout output and the results JSON.
@@ -142,7 +142,7 @@ def run_inference(use_heuristic: bool = True):
 
     env_copy = os.environ.copy()
     if use_heuristic:
-        env_copy["USE_HEURISTIC"] = "1"
+        env_copy["USE_HEURISTIC"] = "0"
 
     try:
         result = subprocess.run(
