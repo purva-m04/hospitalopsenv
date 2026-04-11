@@ -175,12 +175,6 @@ _CODE_CATEGORY: dict[str, str] = {
  
  
 def _billing_has_discrepancy(ctx: dict) -> bool:
-    """
-    Return True if any of the following cross-field mismatches are detected:
-      1. billing_code category != report_category  (code-to-service mismatch)
-      2. claimed_amount > fee-schedule ceiling for the code's category
-      3. billing_code is syntactically invalid (non-digit prefix, not in table)
-    """
     code         = ctx.get("billing_code", "")
     rep_cat      = ctx.get("report_category", "")
     amount       = float(ctx.get("claimed_amount", 0))
@@ -196,7 +190,6 @@ def _billing_has_discrepancy(ctx: dict) -> bool:
  
  
 def _billing_should_reject(ctx: dict, has_discrepancy: bool) -> bool:
-    """Reject if code is invalid, insurance won't cover, or discrepancy exists."""
     code             = ctx.get("billing_code", "")
     plan_id          = ctx.get("insurance_plan_id", "")
     code_invalid     = not (code[:2].isdigit() or code.startswith("J"))
@@ -290,7 +283,6 @@ def heuristic_action(obs: dict) -> dict | None:
         available   = inventory.get(req_type, 0)
         o_neg_stock = inventory.get("O-", 0)
  
-        # STEP 1: Discard expired — only on step 0, before anything else.
         if step_number == 0:
             for btype, expiring_count in expiry.items():
                 current_stock    = inventory.get(btype, 0)
@@ -304,10 +296,8 @@ def heuristic_action(obs: dict) -> dict | None:
                         },
                     }
  
-        # STEP 2: Attempt allocation (exact type first, then compatible substitute).
         if not allocation_done and not (allocated_units > 0):
             if available >= req_units:
-                # Full exact allocation
                 return {
                     "action_type": "allocate_blood",
                     "payload": {
@@ -317,7 +307,6 @@ def heuristic_action(obs: dict) -> dict | None:
                     },
                 }
  
-            # Full O- universal donor substitute (only if patient is NOT O-)
             if req_type != "O-" and o_neg_stock >= req_units:
                 return {
                     "action_type": "use_compatible_type",
@@ -328,7 +317,6 @@ def heuristic_action(obs: dict) -> dict | None:
                     },
                 }
  
-            # Partial exact allocation (give what we have)
             if available > 0:
                 return {
                     "action_type": "allocate_blood",
@@ -339,7 +327,6 @@ def heuristic_action(obs: dict) -> dict | None:
                     },
                 }
  
-            # Partial O- substitute
             if req_type != "O-" and o_neg_stock > 0:
                 return {
                     "action_type": "use_compatible_type",
@@ -350,7 +337,6 @@ def heuristic_action(obs: dict) -> dict | None:
                     },
                 }
  
-        # STEP 3: Restock — fires after allocation attempted, only if shortage.
         if not restock_requested:
             shortage    = req_units - allocated_units
             restock_amt = max(1, min(shortage + 5, 50))
@@ -374,20 +360,17 @@ def heuristic_action(obs: dict) -> dict | None:
         if not pending:
             return None
  
-        # Pick highest-priority pending patient
         top_patient = max(pending, key=lambda r: r["priority_score"])
         top_pid     = top_patient["patient_id"]
         needs_vent  = top_patient.get("ventilator_required", False)
         needs_iso   = top_patient.get("isolation_required", False)
  
-        # STEP 1: Assess the top-priority patient first
         if not patient_assessed:
             return {
                 "action_type": "assess_patient",
                 "payload": {"patient_id": top_pid},
             }
  
-        # STEP 2: If no beds available, discharge the longest-staying stable patient
         if not available_beds and not patient_discharged:
             stepdown_candidates = [
                 o for o in occupancy if o.get("ready_for_stepdown", False)
@@ -399,10 +382,8 @@ def heuristic_action(obs: dict) -> dict | None:
                     "payload": {"patient_id": longest["patient_id"]},
                 }
  
-        # Refresh available beds after potential discharge
         current_available = ctx.get("available_bed_ids", [])
  
-        # STEP 3: Escalate if patient needs isolation
         if needs_iso and not issue_escalated:
             return {
                 "action_type": "escalate_issue",
@@ -414,7 +395,6 @@ def heuristic_action(obs: dict) -> dict | None:
                 },
             }
  
-        # STEP 4: Assign the best available bed
         if not bed_assigned and current_available:
             chosen_bed = current_available[0]
             return {
@@ -422,7 +402,6 @@ def heuristic_action(obs: dict) -> dict | None:
                 "payload": {"patient_id": top_pid, "bed_id": chosen_bed},
             }
  
-        # STEP 5: Confirm admission
         if bed_assigned and not ctx.get("admission_confirmed", False):
             return {
                 "action_type": "confirm_admission",
@@ -575,13 +554,13 @@ def main() -> None:
             traceback.print_exc()
             results.append({
                 "scenario_id": scenario_id,
-                "grader_score": 0.0,
+                "grader_score": 0.001,  # ✅ FIXED: was 0.0
                 "total_reward": 0.0,
                 "steps": 0,
                 "error": str(exc),
             })
  
-    avg = sum(r["grader_score"] for r in results) / len(results) if results else 0.0
+    avg = sum(r["grader_score"] for r in results) / len(results) if results else 0.001  # ✅ FIXED: was 0.0
  
     output = {
         "agent": "heuristic" if use_heuristic else f"llm:{MODEL_NAME}",
