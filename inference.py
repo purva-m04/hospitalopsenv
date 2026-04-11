@@ -10,7 +10,7 @@ import json
 import os
 import traceback
  
-OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
+API_KEY: str = os.environ.get("API_KEY", "")
 API_BASE_URL: str   = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME: str     = os.environ.get("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN: str       = os.environ.get("HF_TOKEN", "")
@@ -544,9 +544,9 @@ def main() -> None:
  
     client = None
     if not USE_HEURISTIC:
-        if not OPENAI_API_KEY:
+        if not API_KEY:
             print(
-                "[WARNING] OPENAI_API_KEY is not set. "
+                "[WARNING] API_KEY is not set. "
                 "Switching to heuristic agent automatically.\n"
                 "Set USE_HEURISTIC=1 to suppress this warning."
             )
@@ -554,7 +554,7 @@ def main() -> None:
         else:
             try:
                 from openai import OpenAI
-                client        = OpenAI(api_key=OPENAI_API_KEY, base_url=API_BASE_URL)
+                client        = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
                 use_heuristic = False
                 print(f"[INFO] Using LLM agent: {MODEL_NAME} @ {API_BASE_URL}")
             except ImportError:
