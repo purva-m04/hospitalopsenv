@@ -302,7 +302,7 @@ def main():
         try:
             from openai import OpenAI
             api_key_val = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN") or HF_TOKEN
-        client = OpenAI(api_key=api_key_val, base_url=API_BASE_URL)
+            client = OpenAI(api_key=api_key_val, base_url=API_BASE_URL)
             print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}", flush=True)
             try:
                 client.chat.completions.create(model=MODEL_NAME, messages=[{"role":"user","content":"ping"}], max_tokens=1, timeout=10)
