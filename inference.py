@@ -2,7 +2,7 @@
 inference.py
 ============
 Root-level inference script for HospitalOpsEnv.
-Runs an LLM-driven agent through all 9 scenarios and reports grader scores.
+Runs an LLM-driven agent through all 12 scenarios and reports grader scores.
 Falls back to a deterministic heuristic agent when no API key is available.
 
 Environment variables
@@ -37,7 +37,7 @@ ALL_SCENARIOS = [
     "report_easy",    "report_medium",    "report_hard",
     "billing_easy",   "billing_medium",   "billing_hard",
     "bloodbank_easy", "bloodbank_medium", "bloodbank_hard",
-    "icu_easy",      "icu_medium",      "icu_hard",
+    "icu_easy",       "icu_medium",       "icu_hard",
 ]
 
 # ---------------------------------------------------------------------------
@@ -67,6 +67,11 @@ Action types and their required payload keys:
   request_restock         -> {"blood_type": str, "units_requested": int}
   discard_expired         -> {"blood_type": str, "units_to_discard": int}
   use_compatible_type     -> {"request_id": str, "substitute_type": str, "units": int}
+  assess_patient          -> {"patient_id": str}
+  assign_bed              -> {"patient_id": str, "bed_id": str}
+  confirm_admission       -> {"patient_id": str, "bed_id": str}
+  discharge_patient       -> {"patient_id": str}
+  escalate_issue          -> {"issue_type": str, "details": str}
 
 Valid report labels: lab, imaging, prescription, billing, discharge
 
@@ -76,6 +81,7 @@ Rules:
 - For blood bank: check if the exact blood type is available before substituting.
 - If a blood type is unavailable, consider use_compatible_type with a safe substitute.
 - Universal donor for red blood cells: O-
+- For ICU: assess patient first, then assign bed, then confirm admission.
 
 Respond ONLY with a JSON object. No explanation, no markdown fences.
 """
@@ -89,6 +95,7 @@ def heuristic_action(obs: dict) -> dict:
     task = obs["task_type"]
     ctx  = obs["task_context"]
 
+    # ---- Report Classification -------------------------------------------
     if task == "report_classification":
         from app.utils import heuristic_classify
         label = heuristic_classify(ctx.get("report_text", ""))
@@ -97,6 +104,7 @@ def heuristic_action(obs: dict) -> dict:
             "payload": {"report_id": ctx["report_id"], "label": label},
         }
 
+    # ---- Billing Verification -------------------------------------------
     if task == "billing_verification":
         claim_id = ctx["claim_id"]
 
@@ -144,6 +152,7 @@ def heuristic_action(obs: dict) -> dict:
             "payload": {"claim_id": claim_id},
         }
 
+    # ---- Blood Bank Management ------------------------------------------
     if task == "blood_bank":
         request_id = ctx["request_id"]
         req_type   = ctx["requested_type"]
@@ -190,6 +199,58 @@ def heuristic_action(obs: dict) -> dict:
             "action_type": "allocate_blood",
             "payload": {"request_id": request_id, "blood_type": req_type, "units": 1},
         }
+
+    # ---- ICU Bed Scheduling ---------------------------------------------
+    if task == "icu_bed_scheduling":
+        pending       = ctx.get("pending_requests", [])
+        available_beds = ctx.get("available_bed_ids", [])
+        assessed      = ctx.get("assessed_patient_id")
+        assigned      = ctx.get("assigned_bed_id")
+        should_discharge = ctx.get("should_discharge_patient")
+        should_escalate  = ctx.get("should_escalate", False)
+
+        # Step 1: discharge a patient if needed to free a bed
+        if should_discharge and not ctx.get("discharge_done"):
+            return {
+                "action_type": "discharge_patient",
+                "payload": {"patient_id": should_discharge},
+            }
+
+        # Step 2: escalate if required
+        if should_escalate and not ctx.get("escalation_done"):
+            return {
+                "action_type": "escalate_issue",
+                "payload": {"issue_type": "infrastructure", "details": "ICU resource escalation required"},
+            }
+
+        # Step 3: assess highest priority patient
+        if pending and not assessed:
+            patient = sorted(pending, key=lambda x: -x.get("priority_score", 0))[0]
+            return {
+                "action_type": "assess_patient",
+                "payload": {"patient_id": patient["patient_id"]},
+            }
+
+        # Step 4: assign bed
+        if assessed and not assigned and available_beds:
+            return {
+                "action_type": "assign_bed",
+                "payload": {"patient_id": assessed, "bed_id": available_beds[0]},
+            }
+
+        # Step 5: confirm admission
+        if assessed and assigned:
+            return {
+                "action_type": "confirm_admission",
+                "payload": {"patient_id": assessed, "bed_id": assigned},
+            }
+
+        # Fallback
+        if pending:
+            return {
+                "action_type": "assess_patient",
+                "payload": {"patient_id": pending[0]["patient_id"]},
+            }
 
     return {"action_type": "classify_report",
             "payload": {"report_id": "UNKNOWN", "label": "billing"}}
@@ -238,7 +299,7 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
     steps_taken  = 0
     grader_score = 0.001
     step_rewards = []
-    MAX_STEPS    = 20
+    MAX_STEPS    = 10
 
     try:
         obs        = env.reset(scenario_id)
