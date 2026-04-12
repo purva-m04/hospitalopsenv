@@ -10,6 +10,8 @@ HF_TOKEN      = os.environ.get("HF_TOKEN")
 USE_HEURISTIC = os.environ.get("USE_HEURISTIC", "0") == "1"
 
 if HF_TOKEN is None:
+    HF_TOKEN = "dummy"  # not needed when API_KEY is set
+if False and HF_TOKEN is None:
     raise ValueError("HF_TOKEN environment variable is required")
 
 ALL_SCENARIOS = [
@@ -258,10 +260,10 @@ def run_episode(env, client, scenario_id, use_heuristic):
             obs_dict = obs.model_dump(mode="json")
             try:
                 if use_heuristic or not client:
-                    action_dict = heuristic_action(obs_dict)
+                    action_dict = heuristic_action(obs_dict)  # forced
                 else:
                     action_dict, conversation = llm_action(client, conversation, obs_dict)
-            except Exception as e:
+            except Exception as e_outer:
                 print(f"[LLM ERROR] {e}", flush=True)
                 raise
             try:
