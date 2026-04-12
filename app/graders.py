@@ -160,7 +160,7 @@ class GraderEngine:
                 score += 0.15   # clean-hands: no wasteful discards
             else:
                 # Wasteful discard: lose both sub-components + apply penalty
-                score = max(0.0, score - 0.15)
+                score = max(0.001, score - 0.15)
 
         # Restock handling (0.15)
         if gt.get("should_request_restock", False):
@@ -210,7 +210,7 @@ class GraderEngine:
             if not icu.patient_discharged:
                 score += 0.15  # correctly did NOT discharge
             else:
-                score += 0.0   # unnecessary discharge – slight penalty handled in rewards
+                score += 0.001  # unnecessary discharge – slight penalty handled in rewards
 
         # Escalation handling (0.15)
         if need_escalate:
