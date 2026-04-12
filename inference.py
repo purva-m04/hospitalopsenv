@@ -276,7 +276,7 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
     conversation   = [{"role": "system", "content": SYSTEM_PROMPT}]
     total_reward   = 0.0
     steps_taken    = 0
-    grader_score   = 0.0
+    grader_score   = 0.001
 
     print(f"\n  {'─'*55}")
     print(f"  Scenario : {scenario_id}")
@@ -376,7 +376,7 @@ def main() -> None:
             traceback.print_exc()
             results.append({
                 "scenario_id":  scenario_id,
-                "grader_score": 0.0,
+                "grader_score": 0.001,
                 "total_reward": 0.0,
                 "steps":        0,
                 "error":        str(exc),
@@ -400,7 +400,7 @@ def main() -> None:
             f"{r['steps']:>5}{err}"
         )
 
-    avg = total_score / len(results) if results else 0.0
+    avg = total_score / len(results) if results else 0.001
     print(f"  {'─'*55}")
     print(f"  {'Average score':<28} {avg:>7.3f}")
     print(f"{'═'*60}\n")
