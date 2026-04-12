@@ -261,8 +261,9 @@ def run_episode(env, client, scenario_id, use_heuristic):
                     action_dict = heuristic_action(obs_dict)
                 else:
                     action_dict, conversation = llm_action(client, conversation, obs_dict)
-            except Exception:
-                action_dict = heuristic_action(obs_dict)
+            except Exception as e:
+                print(f"[LLM ERROR] {e}", flush=True)
+                raise
             try:
                 from app.models import Action, ActionType
                 action = Action(
@@ -301,6 +302,10 @@ def main():
             api_key_val = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN") or HF_TOKEN
         client = OpenAI(api_key=api_key_val, base_url=API_BASE_URL)
             print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}", flush=True)
+            try:
+                client.chat.completions.create(model=MODEL_NAME, messages=[{"role":"user","content":"ping"}], max_tokens=1, timeout=10)
+            except Exception:
+                pass
         except ImportError:
             print("[WARNING] openai not installed, using heuristic.", flush=True)
             use_heuristic = True
