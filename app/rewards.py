@@ -69,7 +69,7 @@ class RewardEngine:
             return self._reward_blood_bank(action, outcome, state)
         if state.task_type == TaskType.ICU_BED_SCHEDULING:
             return self._reward_icu(action, outcome, state)
-        return 0.0
+        return 0.001
 
     # ------------------------------------------------------------------
     # Task 1 – Report Classification
@@ -85,7 +85,7 @@ class RewardEngine:
             return -0.1  # invalid label supplied
 
         if outcome.get("correct"):
-            return 1.0   # correct label
+            return 0.999   # correct label
 
         return -0.5      # classified but wrong label
 
@@ -142,7 +142,7 @@ class RewardEngine:
                 return 0.5 + decay   # correct decision
             return -0.5              # wrong decision (should have approved)
 
-        return 0.0
+        return 0.001
 
     # ------------------------------------------------------------------
     # Task 3 – Blood Bank Management  (with time-decay)
@@ -178,7 +178,7 @@ class RewardEngine:
                 return -0.1
             if bb.should_request_restock:
                 return 0.2 + decay   # needed and requested
-            return 0.0               # not needed, but not harmful
+            return 0.001               # not needed, but not harmful
 
         # ---- discard_expired -----------------------------------------------
         if at == ActionType.DISCARD_EXPIRED:
@@ -189,7 +189,7 @@ class RewardEngine:
                 return 0.2 + decay   # correctly discarding an expiring type
             return -0.2              # discarding non-expiring units – wasteful
 
-        return 0.0
+        return 0.001
 
     # ------------------------------------------------------------------
     # Task 4 – ICU Bed Scheduling
@@ -252,9 +252,9 @@ class RewardEngine:
             missed_escalate = need_escalate and not icu.issue_escalated
             missed_discharge = need_discharge and not icu.patient_discharged
             if correct_patient and correct_bed and not missed_escalate and not missed_discharge:
-                return 1.0   # perfect episode closure
+                return 0.999   # perfect episode closure
             if correct_patient and correct_bed:
                 return 0.5   # right patient and bed but missed auxiliary steps
             return 0.1       # confirmed but suboptimal
 
-        return 0.0
+        return 0.001
