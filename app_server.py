@@ -142,7 +142,7 @@ def run_inference(use_heuristic: bool = False):
 
     env_copy = os.environ.copy()
     if use_heuristic:
-        env_copy["USE_HEURISTIC"] = "0"
+        env_copy["USE_HEURISTIC"] = "1"
 
     try:
         result = subprocess.run(
