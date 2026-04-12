@@ -298,7 +298,8 @@ def main():
     if not use_heuristic:
         try:
             from openai import OpenAI
-            client = OpenAI(api_key=os.environ.get("API_KEY", HF_TOKEN), base_url=API_BASE_URL)
+            api_key_val = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN") or HF_TOKEN
+        client = OpenAI(api_key=api_key_val, base_url=API_BASE_URL)
             print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}", flush=True)
         except ImportError:
             print("[WARNING] openai not installed, using heuristic.", flush=True)
