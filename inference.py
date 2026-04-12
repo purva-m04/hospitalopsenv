@@ -313,11 +313,11 @@ def main():
         except Exception:
             traceback.print_exc()
             results.append({"scenario_id": scenario_id, "grader_score": SCORE_MIN,
-                            "total_reward": 0.0, "steps": 0})
+                            "total_reward": 0.001, "steps": 0})
     for r in results:
         r["grader_score"] = clamp_score(r.get("grader_score"))
     avg = clamp_score(sum(r["grader_score"] for r in results) / len(results)) if results else SCORE_MIN
-    output = {"results": results, "average_grader_score": round(avg, 4)}
+    output = {"results": results, "average_grader_score": round(max(0.001, min(0.999, avg)), 4)}
     with open("results.json", "w") as f:
         json.dump(output, f, indent=2)
     print(f"\n[DONE] Average grader score: {avg:.4f}", flush=True)
