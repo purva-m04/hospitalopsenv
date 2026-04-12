@@ -2,22 +2,15 @@
 inference.py
 ============
 Root-level inference script for HospitalOpsEnv.
-
 Runs an LLM-driven agent through all 9 scenarios and reports grader scores.
 Falls back to a deterministic heuristic agent when no API key is available.
 
 Environment variables
 ---------------------
-OPENAI_API_KEY  : OpenAI (or compatible) API key
 API_BASE_URL    : API base URL (default: https://api.openai.com/v1)
 MODEL_NAME      : model to use  (default: gpt-4o-mini)
-HF_TOKEN        : HuggingFace token (optional)
+HF_TOKEN        : HuggingFace token (required)
 USE_HEURISTIC   : set to "1" to force heuristic agent (no LLM calls)
-
-Usage
------
-  python inference.py                          # LLM agent
-  USE_HEURISTIC=1 python inference.py          # heuristic agent (no API key needed)
 """
 
 from __future__ import annotations
@@ -32,11 +25,13 @@ from typing import Optional
 # Environment configuration
 # ---------------------------------------------------------------------------
 
-OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
-API_BASE_URL:   str = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME:     str = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN:       str = os.environ.get("HF_TOKEN", "")
+API_BASE_URL:  str = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME:    str = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN:      str = os.environ.get("HF_TOKEN", "")
 USE_HEURISTIC: bool = os.environ.get("USE_HEURISTIC", "0") == "1"
+
+if not HF_TOKEN:
+    raise ValueError("HF_TOKEN environment variable is required")
 
 ALL_SCENARIOS = [
     "report_easy",    "report_medium",    "report_hard",
@@ -86,15 +81,10 @@ Respond ONLY with a JSON object. No explanation, no markdown fences.
 
 
 # ---------------------------------------------------------------------------
-# Heuristic fallback agent  (fixed: no infinite loop)
+# Heuristic fallback agent
 # ---------------------------------------------------------------------------
 
 def heuristic_action(obs: dict) -> dict:
-    """
-    Rule-based agent that handles all 3 tasks without any LLM calls.
-    BUG FIX: blood bank uses live inventory counts to decide discards,
-    so it never repeats a discard after inventory is already reduced.
-    """
     task = obs["task_type"]
     ctx  = obs["task_context"]
 
@@ -162,13 +152,9 @@ def heuristic_action(obs: dict) -> dict:
         request_id = ctx["request_id"]
         req_type   = ctx["requested_type"]
         req_units  = ctx["requested_units"]
-        inventory  = ctx["inventory"]          # LIVE — updates every step
+        inventory  = ctx["inventory"]
         expiry     = ctx.get("expiry_status", {})
 
-        # Step 1: discard expiring units.
-        # KEY FIX: use min(expiring_count, live_available) so we never
-        # try to discard more than what is currently in inventory,
-        # and once the inventory hits 0 we skip and move on.
         for btype, expiring_count in expiry.items():
             live_available = inventory.get(btype, 0)
             if expiring_count > 0 and live_available > 0:
@@ -179,7 +165,6 @@ def heuristic_action(obs: dict) -> dict:
                                 "units_to_discard": units_to_discard},
                 }
 
-        # Step 2: allocate exact type
         available = inventory.get(req_type, 0)
         if available >= req_units:
             return {
@@ -189,7 +174,6 @@ def heuristic_action(obs: dict) -> dict:
                             "units": req_units},
             }
 
-        # Step 3: O- universal fallback
         o_neg = inventory.get("O-", 0)
         if o_neg >= req_units and req_type != "O-":
             return {
@@ -199,7 +183,6 @@ def heuristic_action(obs: dict) -> dict:
                             "units": req_units},
             }
 
-        # Step 4: partial allocation (whatever is left)
         if available > 0:
             return {
                 "action_type": "allocate_blood",
@@ -208,15 +191,12 @@ def heuristic_action(obs: dict) -> dict:
                             "units": available},
             }
 
-        # Step 5: request restock
         if not ctx.get("restock_requested"):
             return {
                 "action_type": "request_restock",
                 "payload": {"blood_type": req_type, "units_requested": 10},
             }
 
-        # Step 6: truly stuck — force a 0-unit allocate to hit max_steps naturally
-        # (env will reject it and eventually done=True via step limit)
         return {
             "action_type": "allocate_blood",
             "payload": {"request_id": request_id,
@@ -224,7 +204,6 @@ def heuristic_action(obs: dict) -> dict:
                         "units": 1},
         }
 
-    # Fallback
     return {"action_type": "classify_report",
             "payload": {"report_id": "UNKNOWN", "label": "billing"}}
 
@@ -269,23 +248,20 @@ def llm_action(client, conversation: list[dict], obs: dict) -> tuple[dict, list[
 # ---------------------------------------------------------------------------
 
 def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
-    from app.models import Action, ActionType
+    obs          = env.reset(scenario_id)
+    episode_id   = obs.episode_id
+    total_reward = 0.0
+    steps_taken  = 0
+    grader_score = 0.001
+    step_rewards = []
+    MAX_STEPS    = 20
 
-    obs        = env.reset(scenario_id)
-    episode_id = obs.episode_id
+    conversation = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    conversation   = [{"role": "system", "content": SYSTEM_PROMPT}]
-    total_reward   = 0.0
-    steps_taken    = 0
-    grader_score   = 0.001
+    # [START] line
+    print(f"[START] task={obs.task_type.value} env=hospitalopsenv model={MODEL_NAME}",
+          flush=True)
 
-    print(f"\n  {'─'*55}")
-    print(f"  Scenario : {scenario_id}")
-    print(f"  Task     : {obs.task_type.value}")
-    print(f"  Episode  : {episode_id}")
-    print(f"  {'─'*55}")
-
-    MAX_STEPS = 20
     while not obs.done and steps_taken < MAX_STEPS:
         obs_dict = obs.model_dump(mode="json")
 
@@ -295,45 +271,56 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
             else:
                 action_dict, conversation = llm_action(client, conversation, obs_dict)
         except Exception as exc:
-            print(f"    [AGENT ERROR] {exc} — falling back to heuristic")
             action_dict = heuristic_action(obs_dict)
 
         try:
+            from app.models import Action, ActionType
             action = Action(
                 action_type=ActionType(action_dict["action_type"]),
                 payload=action_dict.get("payload", {}),
                 episode_id=episode_id,
             )
         except Exception as exc:
-            print(f"    [ACTION PARSE ERROR] {exc}")
+            print(
+                f"[STEP] step={steps_taken+1} action=error "
+                f"reward=0.00 done=false error={str(exc)[:80]}",
+                flush=True
+            )
             break
 
         obs, reward, done, info = env.step(action)
         total_reward += reward
         steps_taken  += 1
+        step_rewards.append(reward)
 
-        status = "✓" if info.action_valid else "✗"
+        error_str = info.outcome if not info.action_valid else "null"
         print(
-            f"    Step {steps_taken:>3} {status}  "
-            f"{action.action_type.value:<28}  "
-            f"reward={reward:+.2f}  "
-            f"{info.outcome[:45]}"
+            f"[STEP] step={steps_taken} "
+            f"action={action.action_type.value} "
+            f"reward={reward:.2f} "
+            f"done={'true' if done else 'false'} "
+            f"error={error_str}",
+            flush=True
         )
 
         if done:
-            grader_score = info.grader_score or 0.001
+            grader_score = max(0.001, min(0.999, info.grader_score or 0.001))
             break
 
-    print(f"  {'─'*55}")
-    print(f"  Grader score : {grader_score:.3f}   "
-          f"Cumulative reward : {total_reward:+.3f}   "
-          f"Steps : {steps_taken}")
+    success = grader_score >= 0.5
+    rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
+    print(
+        f"[END] success={'true' if success else 'false'} "
+        f"steps={steps_taken} "
+        f"rewards={rewards_str}",
+        flush=True
+    )
 
     return {
-        "scenario_id":   scenario_id,
-        "grader_score":  grader_score,
-        "total_reward":  round(total_reward, 4),
-        "steps":         steps_taken,
+        "scenario_id":  scenario_id,
+        "grader_score": grader_score,
+        "total_reward": round(total_reward, 4),
+        "steps":        steps_taken,
     }
 
 
@@ -348,72 +335,52 @@ def main() -> None:
     use_heuristic = USE_HEURISTIC
 
     if not use_heuristic:
-        if not OPENAI_API_KEY:
-            print("[WARNING] OPENAI_API_KEY not set — switching to heuristic agent.\n")
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
+            print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}", flush=True)
+        except ImportError:
+            print("[WARNING] openai package not installed — using heuristic agent.",
+                  flush=True)
             use_heuristic = True
-        else:
-            try:
-                from openai import OpenAI
-                client = OpenAI(api_key=OPENAI_API_KEY, base_url=API_BASE_URL)
-                print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}")
-            except ImportError:
-                print("[WARNING] openai package not installed — using heuristic agent.")
-                use_heuristic = True
     else:
-        print("[INFO] USE_HEURISTIC=1 — running deterministic heuristic agent.")
+        print("[INFO] USE_HEURISTIC=1 — running deterministic heuristic agent.",
+              flush=True)
 
     env     = HospitalOpsEnv(scenarios_dir="scenarios")
     results = []
-
-    print(f"\n{'═'*60}")
-    print("  HospitalOpsEnv — Inference Run")
-    print(f"{'═'*60}")
 
     for scenario_id in ALL_SCENARIOS:
         try:
             result = run_episode(env, client, scenario_id, use_heuristic)
             results.append(result)
         except Exception as exc:
-            print(f"\n  [EPISODE ERROR] {scenario_id}: {exc}")
             traceback.print_exc()
             results.append({
                 "scenario_id":  scenario_id,
                 "grader_score": 0.001,
                 "total_reward": 0.0,
                 "steps":        0,
-                "error":        str(exc),
             })
 
-    # Summary
-    print(f"\n{'═'*60}")
-    print("  FINAL SCORE SUMMARY")
-    print(f"{'═'*60}")
-    print(f"  {'Scenario':<28} {'Score':>7}  {'Reward':>8}  {'Steps':>5}")
-    print(f"  {'─'*55}")
-
+    # Write results.json
     total_score = 0.0
     for r in results:
         score = r.get("grader_score", 0.001)
+        score = max(0.001, min(0.999, score))
         total_score += score
-        err = " [ERROR]" if "error" in r else ""
-        print(
-            f"  {r['scenario_id']:<28} {score:>7.3f}  "
-            f"{r['total_reward']:>+8.3f}  "
-            f"{r['steps']:>5}{err}"
-        )
 
     avg = total_score / len(results) if results else 0.001
-    print(f"  {'─'*55}")
-    print(f"  {'Average score':<28} {avg:>7.3f}")
-    print(f"{'═'*60}\n")
 
-    with open("results.json", "w", encoding="utf-8") as fh:
-        json.dump({
-            "agent":                "heuristic" if use_heuristic else f"llm:{MODEL_NAME}",
-            "average_grader_score": round(avg, 4),
-            "results":              results,
-        }, fh, indent=2)
-    print("Results saved → results.json")
+    output = {
+        "results": results,
+        "average_grader_score": round(avg, 4),
+    }
+
+    with open("results.json", "w") as f:
+        json.dump(output, f, indent=2)
+
+    print(f"\n[DONE] Average grader score: {avg:.4f}", flush=True)
 
 
 if __name__ == "__main__":
