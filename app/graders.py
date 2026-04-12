@@ -68,7 +68,7 @@ class GraderEngine:
                 score += 0.10
             # >2 steps → 0 efficiency bonus (agent looped before classifying)
 
-        return round(min(0.999, max(0.001, score)), 3)
+        return round(min(0.998, max(0.002, score)), 3)
 
     # ------------------------------------------------------------------
     # Task 2 – Billing & Insurance Verification
@@ -115,7 +115,7 @@ class GraderEngine:
             score += 0.35
         # Wrong decision or no decision → 0 points here
 
-        return round(min(0.999, max(0.001, score)), 3)
+        return round(min(0.998, max(0.002, score)), 3)
 
     # ------------------------------------------------------------------
     # Task 3 – Blood Bank Management
@@ -169,7 +169,7 @@ class GraderEngine:
         else:
             score += 0.15
 
-        return round(min(0.999, max(0.001, score)), 3)
+        return round(min(0.998, max(0.002, score)), 3)
 
     # ------------------------------------------------------------------
     # Task 4 – ICU Bed Scheduling
@@ -239,4 +239,4 @@ class GraderEngine:
         if icu.admission_confirmed:
             score += 0.10
 
-        return round(min(0.999, max(0.001, score)), 3)
+        return round(min(0.998, max(0.002, score)), 3)
