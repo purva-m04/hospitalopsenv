@@ -1,0 +1,21 @@
+{
+  "request_id": "BLD-099",
+  "requested_type": "O-",
+  "requested_units": 2,
+  "urgency": "emergency",
+  "inventory": {
+    "A+": 10,
+    "A-": 3,
+    "B+": 7,
+    "B-": 2,
+    "O+": 12,
+    "O-": 1,
+    "AB+": 5,
+    "AB-": 0
+  },
+  "expiry_status": {
+    "A+": 3
+  },
+  "restock_requested": false,
+  "allocation_fulfilled": false
+}

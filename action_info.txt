@@ -1,0 +1,18 @@
+class Action(BaseModel):
+    """
+    A single agent action.
+
+    Fields
+    ------
+    action_type : ActionType
+        Which action to perform.
+    payload : dict
+        Key/value arguments required by the action (see docs/action_space.md).
+    episode_id : str
+        Must match the current episode's ID to prevent stale actions.
+    """
+
+    action_type: ActionType
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    episode_id: str
+

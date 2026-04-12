@@ -1,0 +1,5 @@
+c=open('inference.py',encoding='utf-8').read() 
+c=c.replace('HF_TOKEN:      str = os.environ.get("HF_TOKEN", "")','HF_TOKEN = os.environ.get("HF_TOKEN")') 
+c=c.replace('if not HF_TOKEN:','if HF_TOKEN is None:') 
+open('inference.py','w',encoding='utf-8').write(c) 
+print('done') 

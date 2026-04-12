@@ -1,0 +1,284 @@
+"""
+app/models.py
+=============
+All Pydantic typed models for HospitalOpsEnv.
+Single source of truth for every data structure used across the project.
+"""
+
+from __future__ import annotations
+
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
+
+# ---------------------------------------------------------------------------
+# Enumerations
+# ---------------------------------------------------------------------------
+
+
+class TaskType(str, Enum):
+    REPORT_CLASSIFICATION = "report_classification"
+    BILLING_VERIFICATION = "billing_verification"
+    BLOOD_BANK = "blood_bank"
+    ICU_BED_SCHEDULING = "icu_bed_scheduling"
+
+
+class Difficulty(str, Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class EpisodeStatus(str, Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ActionType(str, Enum):
+    # Task 1 – Report Classification
+    CLASSIFY_REPORT = "classify_report"
+
+    # Task 2 – Billing & Insurance Verification
+    VALIDATE_BILLING_CODE = "validate_billing_code"
+    VERIFY_INSURANCE = "verify_insurance"
+    FLAG_DISCREPANCY = "flag_discrepancy"
+    APPROVE_CLAIM = "approve_claim"
+    REJECT_CLAIM = "reject_claim"
+
+    # Task 3 – Blood Bank Management
+    ALLOCATE_BLOOD = "allocate_blood"
+    REQUEST_RESTOCK = "request_restock"
+    DISCARD_EXPIRED = "discard_expired"
+    USE_COMPATIBLE_TYPE = "use_compatible_type"
+
+    # Task 4 – ICU Bed Scheduling
+    ASSESS_PATIENT = "assess_patient"
+    ASSIGN_BED = "assign_bed"
+    DISCHARGE_PATIENT = "discharge_patient"
+    CONFIRM_ADMISSION = "confirm_admission"
+    ESCALATE_ISSUE = "escalate_issue"
+
+
+# ---------------------------------------------------------------------------
+# API-level models (what inference.py / agents interact with)
+# ---------------------------------------------------------------------------
+
+
+class Action(BaseModel):
+    """
+    A single agent action.
+
+    Fields
+    ------
+    action_type : ActionType
+        Which action to perform.
+    payload : dict
+        Key/value arguments required by the action (see docs/action_space.md).
+    episode_id : str
+        Must match the current episode's ID to prevent stale actions.
+    """
+
+    action_type: ActionType
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    episode_id: str
+
+
+class Observation(BaseModel):
+    """
+    What the agent sees at each step.
+    Hidden state (ground truth, correct labels) is NEVER included here.
+
+    Fields
+    ------
+    task_type       : current task
+    step_number     : 0-indexed steps taken so far
+    max_steps       : episode step budget
+    episode_id      : unique episode identifier
+    available_actions : list of valid action_type strings for this task
+    task_context    : task-specific visible data
+    done            : True once the episode has ended
+    """
+
+    task_type: TaskType
+    step_number: int
+    max_steps: int
+    episode_id: str
+    available_actions: List[str]
+    task_context: Dict[str, Any]
+    done: bool = False
+
+
+class Reward(BaseModel):
+    """Structured reward breakdown (informational; step() returns a plain float)."""
+
+    step_reward: float
+    cumulative_reward: float
+    reward_reason: str
+    components: Dict[str, float] = Field(default_factory=dict)
+
+
+class StepInfo(BaseModel):
+    """
+    Auxiliary information returned alongside (obs, reward, done) from step().
+
+    grader_score and episode_summary are populated only when done=True.
+    """
+
+    action_valid: bool
+    validation_errors: List[str] = Field(default_factory=list)
+    outcome: str = ""
+    grader_score: Optional[float] = None
+    episode_summary: Optional[Dict[str, Any]] = None
+
+
+# ---------------------------------------------------------------------------
+# Internal task-state sub-models (stored inside InternalState)
+# ---------------------------------------------------------------------------
+
+
+class ReportState(BaseModel):
+    """Mutable state for Report Classification episodes."""
+
+    report_id: str
+    correct_label: str  # HIDDEN – not exposed in Observation
+    submitted_label: Optional[str] = None
+    classified: bool = False
+
+
+class BillingState(BaseModel):
+    """Mutable state for Billing Verification episodes."""
+
+    claim_id: str
+
+    # Ground truth (hidden)
+    correct_code: str
+    code_is_valid: bool
+    insurance_covers: bool
+    has_discrepancy: bool
+    correct_final_decision: str  # "approve_claim" | "reject_claim"
+
+    # Agent-driven progress flags
+    code_validated: bool = False
+    code_correct_result: Optional[bool] = None  # True=valid, False=invalid
+    insurance_verified: bool = False
+    insurance_correct_result: Optional[bool] = None  # True=covered
+    discrepancy_flagged: bool = False
+    final_decision: Optional[str] = None
+
+
+class BloodBankState(BaseModel):
+    """Mutable state for Blood Bank Management episodes."""
+
+    request_id: str
+    requested_type: str
+    requested_units: int
+    urgency: str  # "routine" | "urgent" | "emergency"
+    inventory: Dict[str, int]
+    initial_inventory: Dict[str, int]  # snapshot for grader comparison
+    expiry_data: Dict[str, int]  # blood_type -> units expiring within 7 days
+
+    # Ground truth (hidden)
+    should_discard_types: List[str]
+    should_request_restock: bool
+    correct_allocation_type: str
+
+    # Agent-driven progress
+    restock_requested: bool = False
+    allocation_fulfilled: bool = False
+    allocated_type: Optional[str] = None
+    allocated_units: int = 0
+    units_discarded: int = 0
+
+
+class IcuSchedulingState(BaseModel):
+    """Mutable state for ICU Bed Scheduling episodes."""
+
+    ward_id: str
+    total_beds: int
+    available_beds: int
+    available_bed_ids: List[str]
+
+    # Pending admission requests (list of dicts with patient_id, priority_score, etc.)
+    pending_requests: List[Dict[str, Any]]
+
+    # Current occupancy list (list of dicts with bed_id, patient_id, ventilator, etc.)
+    current_occupancy: List[Dict[str, Any]]
+
+    # Ground truth (hidden)
+    correct_patient_to_admit: str
+    correct_bed_id: str
+    should_discharge_patient: Optional[str]
+    should_escalate: bool
+    requires_ventilator_bed: bool
+    requires_isolation_bed: bool
+
+    # Agent-driven progress
+    patient_assessed: bool = False
+    assessed_patient_id: Optional[str] = None
+    bed_assigned: bool = False
+    assigned_bed_id: Optional[str] = None
+    assigned_patient_id: Optional[str] = None
+    patient_discharged: bool = False
+    discharged_patient_id: Optional[str] = None
+    issue_escalated: bool = False
+    escalation_reason: str = ""
+    admission_confirmed: bool = False
+
+
+# ---------------------------------------------------------------------------
+# Top-level internal state
+# ---------------------------------------------------------------------------
+
+
+class InternalState(BaseModel):
+    """
+    Full environment state.
+    Returned by env.state() for debugging/testing.
+    NEVER exposed wholesale to the agent during normal inference.
+    """
+
+    episode_id: str
+    scenario_id: str
+    task_type: TaskType
+    difficulty: Difficulty
+    step_number: int = 0
+    max_steps: int = 10
+    status: EpisodeStatus = EpisodeStatus.RUNNING
+
+    # Exactly one of these will be populated per episode
+    report_state: Optional[ReportState] = None
+    billing_state: Optional[BillingState] = None
+    blood_bank_state: Optional[BloodBankState] = None
+    icu_state: Optional[IcuSchedulingState] = None
+
+    # Full history (used by graders)
+    action_history: List[Dict[str, Any]] = Field(default_factory=list)
+    reward_history: List[float] = Field(default_factory=list)
+    cumulative_reward: float = 0.0
+
+
+# ---------------------------------------------------------------------------
+# Scenario definition
+# ---------------------------------------------------------------------------
+
+
+class ScenarioDefinition(BaseModel):
+    """
+    Represents one loaded scenario JSON file.
+
+    context      : visible data for the observation
+    ground_truth : hidden data used only by graders
+    """
+
+    scenario_id: str
+    task_type: TaskType
+    difficulty: Difficulty
+    max_steps: int
+    description: str
+    context: Dict[str, Any]
+    ground_truth: Dict[str, Any]
+    expected_action_sequence: List[str] = Field(default_factory=list)
+

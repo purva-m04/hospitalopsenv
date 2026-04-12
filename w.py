@@ -1,0 +1,1 @@
+open("inference.py","w",encoding="utf-8").write(open("C:/Users/purva/Downloads/inference.py","rb").read().decode("utf-8",errors="ignore"))

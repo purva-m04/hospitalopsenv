@@ -1,0 +1,5 @@
+c=open('inference.py',encoding='utf-8').read() 
+c=c.replace('        temperature=0.0,\n        max_tokens=300,\n    )','        temperature=0.0,\n        max_tokens=300,\n        timeout=20,\n    )') 
+c=c.replace('    while not obs.done:','    MAX_STEPS = 20\n    while not obs.done and steps_taken < MAX_STEPS:') 
+open('inference.py','w',encoding='utf-8').write(c) 
+print('done') 

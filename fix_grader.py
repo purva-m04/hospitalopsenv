@@ -1,0 +1,5 @@
+c=open('app/graders.py',encoding='utf-8').read() 
+c=c.replace('score = max(0.0, score - 0.15)','score = max(0.001, score - 0.15)') 
+c=c.replace('score += 0.0   # unnecessary discharge','score += 0.001  # unnecessary discharge') 
+open('app/graders.py','w',encoding='utf-8').write(c) 
+print('done') 
