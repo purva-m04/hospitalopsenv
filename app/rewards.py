@@ -35,6 +35,12 @@ from __future__ import annotations
 
 from app.models import Action, ActionType, InternalState, TaskType
 
+
+def _clamp(v):
+    if v <= 0: return 0.001
+    if v >= 1: return 0.999
+    return round(v, 4)
+
 BASE_DECAY: float = 0.10
 MAX_DECAY_STEPS: int = 6
 
@@ -62,13 +68,13 @@ class RewardEngine:
         state: InternalState,
     ) -> float:
         if state.task_type == TaskType.REPORT_CLASSIFICATION:
-            return self._reward_report(action, outcome, state)
+            return _clamp(self._reward_report(action, outcome, state))
         if state.task_type == TaskType.BILLING_VERIFICATION:
-            return self._reward_billing(action, outcome, state)
+            return _clamp(self._reward_billing(action, outcome, state))
         if state.task_type == TaskType.BLOOD_BANK:
-            return self._reward_blood_bank(action, outcome, state)
+            return _clamp(self._reward_blood_bank(action, outcome, state))
         if state.task_type == TaskType.ICU_BED_SCHEDULING:
-            return self._reward_icu(action, outcome, state)
+            return _clamp(self._reward_icu(action, outcome, state))
         return 0.001
 
     # ------------------------------------------------------------------

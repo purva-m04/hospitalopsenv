@@ -273,6 +273,7 @@ def run_episode(env, client, scenario_id, use_heuristic):
                 print(f"[STEP] step={steps_taken+1} action=error reward=0.00 done=false error={str(exc)[:80]}", flush=True)
                 break
             obs, reward, done, info = env.step(action)
+            reward = max(0.001, min(0.999, reward))
             total_reward += reward
             steps_taken  += 1
             step_rewards.append(reward)

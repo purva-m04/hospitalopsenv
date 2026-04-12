@@ -31,13 +31,13 @@ class GraderEngine:
     ) -> float:
         gt = scenario.ground_truth
         if state.task_type == TaskType.REPORT_CLASSIFICATION:
-            return self._grade_report(state, gt)
+            return max(0.001, min(0.999, self._grade_report(state, gt)))
         if state.task_type == TaskType.BILLING_VERIFICATION:
-            return self._grade_billing(state, gt)
+            return max(0.001, min(0.999, self._grade_billing(state, gt)))
         if state.task_type == TaskType.BLOOD_BANK:
-            return self._grade_blood_bank(state, gt)
+            return max(0.001, min(0.999, self._grade_blood_bank(state, gt)))
         if state.task_type == TaskType.ICU_BED_SCHEDULING:
-            return self._grade_icu(state, gt)
+            return max(0.001, min(0.999, self._grade_icu(state, gt)))
         return 0.001
 
     # ------------------------------------------------------------------
