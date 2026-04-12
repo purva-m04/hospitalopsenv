@@ -108,9 +108,9 @@ def step(req: StepRequest):
         obs, reward, done, info = _env.step(action)
         return {
             "observation": obs.model_dump(mode="json"),
-            "reward": reward,
+            "reward": max(0.001, min(0.999, float(reward))),
             "done": done,
-            "info": info.model_dump(mode="json"),
+            "info": {k: (max(0.001, min(0.999, v)) if k == "grader_score" and v is not None else v) for k, v in info.model_dump(mode="json").items()},
         }
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
