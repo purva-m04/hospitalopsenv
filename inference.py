@@ -25,12 +25,12 @@ from typing import Optional
 # Environment configuration
 # ---------------------------------------------------------------------------
 
-API_BASE_URL:  str = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME:    str = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN:      str = os.environ.get("HF_TOKEN", "")
+API_BASE_URL:  str  = os.environ.get("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME:    str  = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN             = os.environ.get("HF_TOKEN")
 USE_HEURISTIC: bool = os.environ.get("USE_HEURISTIC", "0") == "1"
 
-if not HF_TOKEN:
+if HF_TOKEN is None:
     raise ValueError("HF_TOKEN environment variable is required")
 
 ALL_SCENARIOS = [
@@ -88,7 +88,6 @@ def heuristic_action(obs: dict) -> dict:
     task = obs["task_type"]
     ctx  = obs["task_context"]
 
-    # ---- Report Classification -------------------------------------------
     if task == "report_classification":
         from app.utils import heuristic_classify
         label = heuristic_classify(ctx.get("report_text", ""))
@@ -97,7 +96,6 @@ def heuristic_action(obs: dict) -> dict:
             "payload": {"report_id": ctx["report_id"], "label": label},
         }
 
-    # ---- Billing Verification -------------------------------------------
     if task == "billing_verification":
         claim_id = ctx["claim_id"]
 
@@ -110,17 +108,16 @@ def heuristic_action(obs: dict) -> dict:
         if not ctx.get("insurance_verified"):
             return {
                 "action_type": "verify_insurance",
-                "payload": {"claim_id": claim_id,
-                            "plan_id": ctx["insurance_plan_id"]},
+                "payload": {"claim_id": claim_id, "plan_id": ctx["insurance_plan_id"]},
             }
 
         billing_code = ctx["billing_code"]
         plan_id      = ctx["insurance_plan_id"]
         report_cat   = ctx.get("report_category", "")
 
-        code_looks_invalid       = not billing_code[:2].isdigit()
-        plan_is_restrictive      = plan_id in ("PLAN-NONE", "PLAN-BASIC")
-        plan_wont_cover_imaging  = plan_is_restrictive and report_cat == "imaging"
+        code_looks_invalid      = not billing_code[:2].isdigit()
+        plan_is_restrictive     = plan_id in ("PLAN-NONE", "PLAN-BASIC")
+        plan_wont_cover_imaging = plan_is_restrictive and report_cat == "imaging"
 
         if code_looks_invalid:
             if not ctx.get("discrepancy_flagged"):
@@ -131,8 +128,7 @@ def heuristic_action(obs: dict) -> dict:
                 }
             return {
                 "action_type": "reject_claim",
-                "payload": {"claim_id": claim_id,
-                            "reason": "Invalid billing code detected"},
+                "payload": {"claim_id": claim_id, "reason": "Invalid billing code detected"},
             }
 
         if plan_wont_cover_imaging:
@@ -147,7 +143,6 @@ def heuristic_action(obs: dict) -> dict:
             "payload": {"claim_id": claim_id},
         }
 
-    # ---- Blood Bank Management ------------------------------------------
     if task == "blood_bank":
         request_id = ctx["request_id"]
         req_type   = ctx["requested_type"]
@@ -161,34 +156,27 @@ def heuristic_action(obs: dict) -> dict:
                 units_to_discard = min(expiring_count, live_available)
                 return {
                     "action_type": "discard_expired",
-                    "payload": {"blood_type": btype,
-                                "units_to_discard": units_to_discard},
+                    "payload": {"blood_type": btype, "units_to_discard": units_to_discard},
                 }
 
         available = inventory.get(req_type, 0)
         if available >= req_units:
             return {
                 "action_type": "allocate_blood",
-                "payload": {"request_id": request_id,
-                            "blood_type": req_type,
-                            "units": req_units},
+                "payload": {"request_id": request_id, "blood_type": req_type, "units": req_units},
             }
 
         o_neg = inventory.get("O-", 0)
         if o_neg >= req_units and req_type != "O-":
             return {
                 "action_type": "use_compatible_type",
-                "payload": {"request_id": request_id,
-                            "substitute_type": "O-",
-                            "units": req_units},
+                "payload": {"request_id": request_id, "substitute_type": "O-", "units": req_units},
             }
 
         if available > 0:
             return {
                 "action_type": "allocate_blood",
-                "payload": {"request_id": request_id,
-                            "blood_type": req_type,
-                            "units": available},
+                "payload": {"request_id": request_id, "blood_type": req_type, "units": available},
             }
 
         if not ctx.get("restock_requested"):
@@ -199,9 +187,7 @@ def heuristic_action(obs: dict) -> dict:
 
         return {
             "action_type": "allocate_blood",
-            "payload": {"request_id": request_id,
-                        "blood_type": req_type,
-                        "units": 1},
+            "payload": {"request_id": request_id, "blood_type": req_type, "units": 1},
         }
 
     return {"action_type": "classify_report",
@@ -238,8 +224,7 @@ def llm_action(client, conversation: list[dict], obs: dict) -> tuple[dict, list[
     }
     conversation = conversation + [user_msg]
     action_dict  = call_llm(client, conversation)
-    conversation = conversation + [{"role": "assistant",
-                                    "content": json.dumps(action_dict)}]
+    conversation = conversation + [{"role": "assistant", "content": json.dumps(action_dict)}]
     return action_dict, conversation
 
 
@@ -248,73 +233,78 @@ def llm_action(client, conversation: list[dict], obs: dict) -> tuple[dict, list[
 # ---------------------------------------------------------------------------
 
 def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
-    obs          = env.reset(scenario_id)
-    episode_id   = obs.episode_id
     total_reward = 0.0
     steps_taken  = 0
     grader_score = 0.001
     step_rewards = []
     MAX_STEPS    = 20
 
-    conversation = [{"role": "system", "content": SYSTEM_PROMPT}]
+    try:
+        obs        = env.reset(scenario_id)
+        episode_id = obs.episode_id
 
-    # [START] line
-    print(f"[START] task={obs.task_type.value} env=hospitalopsenv model={MODEL_NAME}",
-          flush=True)
+        conversation = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    while not obs.done and steps_taken < MAX_STEPS:
-        obs_dict = obs.model_dump(mode="json")
+        print(f"[START] task={obs.task_type.value} env=hospitalopsenv model={MODEL_NAME}",
+              flush=True)
 
-        try:
-            if use_heuristic or not client:
+        while not obs.done and steps_taken < MAX_STEPS:
+            obs_dict = obs.model_dump(mode="json")
+
+            try:
+                if use_heuristic or not client:
+                    action_dict = heuristic_action(obs_dict)
+                else:
+                    action_dict, conversation = llm_action(client, conversation, obs_dict)
+            except Exception as exc:
                 action_dict = heuristic_action(obs_dict)
-            else:
-                action_dict, conversation = llm_action(client, conversation, obs_dict)
-        except Exception as exc:
-            action_dict = heuristic_action(obs_dict)
 
-        try:
-            from app.models import Action, ActionType
-            action = Action(
-                action_type=ActionType(action_dict["action_type"]),
-                payload=action_dict.get("payload", {}),
-                episode_id=episode_id,
-            )
-        except Exception as exc:
+            try:
+                from app.models import Action, ActionType
+                action = Action(
+                    action_type=ActionType(action_dict["action_type"]),
+                    payload=action_dict.get("payload", {}),
+                    episode_id=episode_id,
+                )
+            except Exception as exc:
+                print(
+                    f"[STEP] step={steps_taken+1} action=error "
+                    f"reward=0.00 done=false error={str(exc)[:80]}",
+                    flush=True
+                )
+                break
+
+            obs, reward, done, info = env.step(action)
+            total_reward += reward
+            steps_taken  += 1
+            step_rewards.append(reward)
+
+            error_str = info.outcome if not info.action_valid else "null"
             print(
-                f"[STEP] step={steps_taken+1} action=error "
-                f"reward=0.00 done=false error={str(exc)[:80]}",
+                f"[STEP] step={steps_taken} "
+                f"action={action.action_type.value} "
+                f"reward={reward:.2f} "
+                f"done={'true' if done else 'false'} "
+                f"error={error_str}",
                 flush=True
             )
-            break
 
-        obs, reward, done, info = env.step(action)
-        total_reward += reward
-        steps_taken  += 1
-        step_rewards.append(reward)
+            if done:
+                grader_score = max(0.001, min(0.999, info.grader_score or 0.001))
+                break
 
-        error_str = info.outcome if not info.action_valid else "null"
+    except Exception as exc:
+        traceback.print_exc()
+
+    finally:
+        success     = grader_score >= 0.5
+        rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
         print(
-            f"[STEP] step={steps_taken} "
-            f"action={action.action_type.value} "
-            f"reward={reward:.2f} "
-            f"done={'true' if done else 'false'} "
-            f"error={error_str}",
+            f"[END] success={'true' if success else 'false'} "
+            f"steps={steps_taken} "
+            f"rewards={rewards_str}",
             flush=True
         )
-
-        if done:
-            grader_score = max(0.001, min(0.999, info.grader_score or 0.001))
-            break
-
-    success = grader_score >= 0.5
-    rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
-    print(
-        f"[END] success={'true' if success else 'false'} "
-        f"steps={steps_taken} "
-        f"rewards={rewards_str}",
-        flush=True
-    )
 
     return {
         "scenario_id":  scenario_id,
@@ -340,12 +330,10 @@ def main() -> None:
             client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
             print(f"[INFO] LLM agent: {MODEL_NAME} @ {API_BASE_URL}", flush=True)
         except ImportError:
-            print("[WARNING] openai package not installed — using heuristic agent.",
-                  flush=True)
+            print("[WARNING] openai package not installed — using heuristic agent.", flush=True)
             use_heuristic = True
     else:
-        print("[INFO] USE_HEURISTIC=1 — running deterministic heuristic agent.",
-              flush=True)
+        print("[INFO] USE_HEURISTIC=1 — running deterministic heuristic agent.", flush=True)
 
     env     = HospitalOpsEnv(scenarios_dir="scenarios")
     results = []
@@ -363,7 +351,6 @@ def main() -> None:
                 "steps":        0,
             })
 
-    # Write results.json
     total_score = 0.0
     for r in results:
         score = r.get("grader_score", 0.001)
