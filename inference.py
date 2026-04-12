@@ -276,7 +276,7 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
     conversation   = [{"role": "system", "content": SYSTEM_PROMPT}]
     total_reward   = 0.0
     steps_taken    = 0
-    grader_score   = 0.00101
+    grader_score   = 0.001
 
     print(f"\n  {'─'*55}")
     print(f"  Scenario : {scenario_id}")
@@ -319,7 +319,7 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
         )
 
         if done:
-            grader_score = max(0.001, min(0.999, info.grader_score or 0.001))
+            grader_score = info.grader_score or 0.001
             break
 
     print(f"  {'─'*55}")
@@ -391,7 +391,7 @@ def main() -> None:
 
     total_score = 0.0
     for r in results:
-        score = r.get("grader_score", 0.0)
+        score = r.get("grader_score", 0.001)
         total_score += score
         err = " [ERROR]" if "error" in r else ""
         print(
@@ -400,7 +400,7 @@ def main() -> None:
             f"{r['steps']:>5}{err}"
         )
 
-    avg = total_score / len(results) if results else 0.00101
+    avg = total_score / len(results) if results else 0.001
     print(f"  {'─'*55}")
     print(f"  {'Average score':<28} {avg:>7.3f}")
     print(f"{'═'*60}\n")
