@@ -289,7 +289,7 @@ def run_episode(env, client, scenario_id, use_heuristic):
         rewards_str = ",".join(f"{r:.2f}" for r in step_rewards)
         print(f"[END] success={'true' if success else 'false'} steps={steps_taken} rewards={rewards_str}", flush=True)
     return {"scenario_id": scenario_id, "grader_score": clamp_score(grader_score),
-            "total_reward": round(total_reward, 4), "steps": steps_taken}
+            "total_reward": round(max(0.001, min(0.999, total_reward)), 4), "steps": steps_taken}
 
 def main():
     from app.env import HospitalOpsEnv
