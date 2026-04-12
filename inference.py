@@ -239,6 +239,7 @@ def call_llm(client, conversation: list[dict]) -> dict:
         messages=conversation,
         temperature=0.0,
         max_tokens=300,
+        timeout=20,
     )
     content = response.choices[0].message.content.strip()
     if content.startswith("```"):
@@ -284,7 +285,8 @@ def run_episode(env, client, scenario_id: str, use_heuristic: bool) -> dict:
     print(f"  Episode  : {episode_id}")
     print(f"  {'─'*55}")
 
-    while not obs.done:
+    MAX_STEPS = 20
+    while not obs.done and steps_taken < MAX_STEPS:
         obs_dict = obs.model_dump(mode="json")
 
         try:
