@@ -93,7 +93,7 @@ grading:
 inference:
   entrypoint: inference.py
   env_vars:
-    api_key: OPENAI_API_KEY
+    api_key: HF_TOKEN
     base_url: API_BASE_URL
     model: MODEL_NAME
     use_heuristic: USE_HEURISTIC

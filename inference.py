@@ -37,6 +37,7 @@ ALL_SCENARIOS = [
     "report_easy",    "report_medium",    "report_hard",
     "billing_easy",   "billing_medium",   "billing_hard",
     "bloodbank_easy", "bloodbank_medium", "bloodbank_hard",
+    "icu_easy",      "icu_medium",      "icu_hard",
 ]
 
 # ---------------------------------------------------------------------------
