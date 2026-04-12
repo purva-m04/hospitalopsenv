@@ -222,7 +222,7 @@ def heuristic_action(obs: dict) -> dict:
 def call_llm(client, conversation):
     response = client.chat.completions.create(
         model=MODEL_NAME, messages=conversation,
-        temperature=0.0, max_tokens=300, timeout=5)
+        temperature=0.0, max_tokens=300, timeout=20)
     content = response.choices[0].message.content.strip()
     if content.startswith("```"):
         lines = [l for l in content.split("\n") if not l.strip().startswith("```")]
